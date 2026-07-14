@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dropzone } from "@/components/upload/dropzone";
 import { ExtractionReviewCard } from "@/components/upload/extraction-review-card";
+import { cn } from "@/lib/utils";
 import type { ExtractedTransaction } from "@/lib/schemas/transaction";
 import { confirmTransaction } from "./actions";
+
+type UploadTab = "single" | "bulk" | "statement";
 
 type QueueItem = {
   id: string;
@@ -36,6 +38,7 @@ async function extractOne(file: File): Promise<{
 export function UploadFlow() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<UploadTab>("single");
 
   async function handleFiles(files: File[]) {
     const newItems: QueueItem[] = files.map((file) => ({
@@ -94,30 +97,44 @@ export function UploadFlow() {
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <h1 className="text-2xl font-medium text-ink">Upload Transactions</h1>
 
-      <Tabs defaultValue="single">
-        <TabsList>
-          <TabsTrigger value="single">Single Image</TabsTrigger>
-          <TabsTrigger value="bulk">Bulk Images</TabsTrigger>
-          <TabsTrigger value="statement" disabled>
-            Import Statement (coming soon)
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="single">
-          <div className="mt-4">
-            <Dropzone multiple={false} onFiles={handleFiles} />
-          </div>
-        </TabsContent>
-        <TabsContent value="bulk">
-          <div className="mt-4">
-            <Dropzone multiple onFiles={handleFiles} />
-          </div>
-        </TabsContent>
-        <TabsContent value="statement">
-          <div className="mt-4 rounded-2xl border border-hairline p-8 text-center text-sm text-muted">
-            Bulk statement (PDF/CSV) import is coming soon.
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="flex w-fit rounded-pill bg-surface-strong p-1">
+        {(
+          [
+            { value: "single", label: "Single Image" },
+            { value: "bulk", label: "Bulk Images" },
+            { value: "statement", label: "Import Statement (coming soon)" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            disabled={t.value === "statement"}
+            onClick={() => setTab(t.value)}
+            className={cn(
+              "rounded-pill px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+              tab === t.value ? "bg-canvas text-ink shadow-sm" : "text-body"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "single" && (
+        <div className="mt-4">
+          <Dropzone multiple={false} onFiles={handleFiles} />
+        </div>
+      )}
+      {tab === "bulk" && (
+        <div className="mt-4">
+          <Dropzone multiple onFiles={handleFiles} />
+        </div>
+      )}
+      {tab === "statement" && (
+        <div className="mt-4 rounded-2xl border border-hairline p-8 text-center text-sm text-muted">
+          Bulk statement (PDF/CSV) import is coming soon.
+        </div>
+      )}
 
       {extracting.length > 0 && (
         <p className="text-sm text-muted">
