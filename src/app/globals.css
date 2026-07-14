@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
+@theme {
+  /* Brand */
+  --color-primary: #0052ff;
+  --color-primary-active: #003ecc;
+  --color-primary-disabled: #a8b8cc;
+
+  /* Surfaces */
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f7f7f7;
+  --color-surface-strong: #eef0f3;
+
+  /* Hairlines */
+  --color-hairline: #dee1e6;
+  --color-hairline-soft: #eef0f3;
+
+  /* Text */
+  --color-ink: #0a0b0d;
+  --color-body: #5b616e;
+  --color-muted: #7c828a;
+  --color-muted-soft: #a8acb3;
+  --color-on-primary: #ffffff;
+
+  /* Trading semantics (text-only, never background fills) */
+  --color-up: #05b169;
+  --color-down: #cf202f;
+
+  /* Radii */
+  --radius-pill: 100px;
+
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+/*
+  PesoTrace is light-theme-only in the app shell (see docs/PROJECT_BRIEF.md).
+  The dark hero pattern from the source design system is reserved for a future
+  marketing landing page and is intentionally not wired up here.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans), -apple-system, system-ui, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
