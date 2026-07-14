@@ -27,6 +27,7 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["stores"]["Insert"]>;
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -44,6 +45,14 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "profiles_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       transactions: {
         Row: {
@@ -85,7 +94,24 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["transactions"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "transactions_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      transaction_direction: TransactionDirection;
+      transaction_status: TransactionStatus;
+      transaction_source: TransactionSource;
+      profile_role: ProfileRole;
+    };
+    CompositeTypes: Record<string, never>;
   };
 };
