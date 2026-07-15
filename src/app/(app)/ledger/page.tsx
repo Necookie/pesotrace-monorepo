@@ -3,6 +3,7 @@ import { getCurrentStoreId, listTransactions } from "@/lib/queries/transactions"
 import type { TransactionCategory } from "@/lib/database.types";
 import { LedgerTable } from "@/components/ledger/ledger-table";
 import { LedgerFilters } from "@/components/ledger/ledger-filters";
+import { ExportDialog } from "@/components/ledger/export-dialog";
 import { TransactionDetailSheet } from "./transaction-detail-sheet";
 
 export default async function LedgerPage({
@@ -25,7 +26,10 @@ export default async function LedgerPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
-      <h1 className="text-2xl font-medium text-ink">Ledger</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-medium text-ink">Ledger</h1>
+        <ExportDialog />
+      </div>
       <LedgerFilters />
       <LedgerTable rows={rows} />
       <TransactionDetailSheet />
