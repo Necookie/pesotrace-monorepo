@@ -1,8 +1,17 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { formatPeso } from "@/lib/format";
 
 type Point = { label: string; send: number; receive: number };
 
 export function TrendChart({ data }: { data: Point[] }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (data.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center rounded-2xl border border-hairline text-sm text-muted">
@@ -47,9 +56,11 @@ export function TrendChart({ data }: { data: Point[] }) {
                 height={receiveH}
                 className="fill-up"
               />
-              <title suppressHydrationWarning>
-                {d.label}: send {formatPeso(d.send)}, receive {formatPeso(d.receive)}
-              </title>
+              {mounted && (
+                <title suppressHydrationWarning>
+                  {d.label}: send {formatPeso(d.send)}, receive {formatPeso(d.receive)}
+                </title>
+              )}
             </g>
           );
         })}
