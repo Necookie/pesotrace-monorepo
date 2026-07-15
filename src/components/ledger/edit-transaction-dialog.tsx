@@ -15,13 +15,13 @@ import type { Database } from "@/lib/database.types";
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
 const editFormSchema = z.object({
-  amount: z.coerce.number().positive("Amount must be positive"),
+  amount: z.number().positive("Amount must be positive"),
   ref_number: z.string().min(1, "Reference number is required"),
   counterparty_name: z.string().nullable().optional(),
   counterparty_number: z.string().nullable().optional(),
   category: transactionCategorySchema,
   direction: z.enum(["send", "receive"]),
-  fee_computed: z.coerce.number().min(0, "Fee cannot be negative"),
+  fee_computed: z.number().min(0, "Fee cannot be negative"),
   status: z.enum(["needs_review", "confirmed"]),
   notes: z.string().nullable().optional(),
 });
@@ -117,7 +117,7 @@ export function EditTransactionDialog({
                 id="amount"
                 type="number"
                 step="0.01"
-                {...register("amount")}
+                {...register("amount", { valueAsNumber: true })}
               />
               {errors.amount && (
                 <p className="text-xs text-destructive">{errors.amount.message}</p>
@@ -129,7 +129,7 @@ export function EditTransactionDialog({
                 id="fee_computed"
                 type="number"
                 step="0.01"
-                {...register("fee_computed")}
+                {...register("fee_computed", { valueAsNumber: true })}
               />
               {errors.fee_computed && (
                 <p className="text-xs text-destructive">{errors.fee_computed.message}</p>
