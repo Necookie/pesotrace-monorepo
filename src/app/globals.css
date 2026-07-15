@@ -29,6 +29,13 @@
   --color-up: #05b169;
   --color-down: #cf202f;
 
+  /* Chart-only categorical accents (bills, other) — cash_in/cash_out/load reuse
+     up/down/primary above. Order + hues validated for CVD-safe adjacency and
+     chroma floor via the dataviz skill's palette validator; chart use only,
+     never for text or UI fills. */
+  --color-chart-bills: #eda100;
+  --color-chart-other: #4a3aa7;
+
   /* Radii */
   --radius-pill: 100px;
 
