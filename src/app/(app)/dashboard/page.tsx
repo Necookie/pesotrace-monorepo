@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { getDashboardStats } from "@/lib/queries/dashboard";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
-import { TrendChart } from "@/components/dashboard/trend-chart";
+import { SendReceiveChart } from "@/components/charts/send-receive-chart";
+import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 import { TopCounterparties } from "@/components/dashboard/top-counterparties";
 import { buttonVariants } from "@/components/ui/button";
 import { formatPeso } from "@/lib/format";
@@ -58,9 +59,16 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <h2 className="mb-3 text-sm font-semibold text-ink">Send vs. Receive</h2>
-          <TrendChart data={stats.trend} />
+          <SendReceiveChart data={stats.trend} />
         </div>
         <TopCounterparties items={stats.topCounterparties} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <h2 className="mb-3 text-sm font-semibold text-ink">By category</h2>
+          <CategoryBreakdownChart data={stats.categoryTotals} />
+        </div>
       </div>
     </div>
   );
