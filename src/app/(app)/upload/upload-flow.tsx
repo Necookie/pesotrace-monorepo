@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Dropzone } from "@/components/upload/dropzone";
 import { ExtractionReviewCard } from "@/components/upload/extraction-review-card";
+import { StatementImport } from "@/components/upload/statement-import";
 import { cn } from "@/lib/utils";
 import type { ExtractedTransaction } from "@/lib/schemas/transaction";
 import type { ExtractionCost } from "@/lib/gemini/pricing";
@@ -120,13 +121,12 @@ export function UploadFlow() {
           [
             { value: "single", label: "Single Image" },
             { value: "bulk", label: "Bulk Images" },
-            { value: "statement", label: "Import Statement (coming soon)" },
+            { value: "statement", label: "Import Statement" },
           ] as const
         ).map((t) => (
           <button
             key={t.value}
             type="button"
-            disabled={t.value === "statement"}
             onClick={() => setTab(t.value)}
             className={cn(
               "rounded-pill px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
@@ -149,8 +149,8 @@ export function UploadFlow() {
         </div>
       )}
       {tab === "statement" && (
-        <div className="mt-4 rounded-2xl border border-hairline p-8 text-center text-sm text-muted">
-          Bulk statement (PDF/CSV) import is coming soon.
+        <div className="mt-4">
+          <StatementImport />
         </div>
       )}
 

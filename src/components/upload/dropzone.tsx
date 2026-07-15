@@ -3,23 +3,33 @@
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+const PRESETS = {
+  image: { mimeTypes: ["image/png", "image/jpeg"], accept: "image/png,image/jpeg", label: "PNG, JPG up to 10MB" },
+  pdf: { mimeTypes: ["application/pdf"], accept: "application/pdf", label: "PDF up to 15MB" },
+} as const;
+
 export function Dropzone({
   multiple,
   onFiles,
+  kind = "image",
 }: {
   multiple: boolean;
   onFiles: (files: File[]) => void;
+  kind?: keyof typeof PRESETS;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const preset = PRESETS[kind];
 
   function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
     const files = Array.from(fileList).filter((f) =>
-      ["image/png", "image/jpeg"].includes(f.type)
+      (preset.mimeTypes as readonly string[]).includes(f.type)
     );
     if (files.length > 0) onFiles(multiple ? files : [files[0]]);
   }
+
+  const noun = kind === "pdf" ? "a statement" : multiple ? "screenshots" : "a screenshot";
 
   return (
     <div
@@ -39,17 +49,15 @@ export function Dropzone({
         dragOver ? "border-primary bg-surface-soft" : "border-hairline hover:bg-surface-soft"
       )}
     >
-      <p className="text-sm font-medium text-ink">
-        Drop {multiple ? "screenshots" : "a screenshot"} here
-      </p>
-      <p className="text-xs text-muted">PNG, JPG up to 10MB</p>
+      <p className="text-sm font-medium text-ink">Drop {noun} here</p>
+      <p className="text-xs text-muted">{preset.label}</p>
       <span className="mt-2 rounded-pill bg-surface-strong px-4 py-1.5 text-sm font-medium text-ink">
         Browse files
       </span>
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg"
+        accept={preset.accept}
         multiple={multiple}
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
