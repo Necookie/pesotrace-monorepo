@@ -100,8 +100,8 @@ export function StatementImport() {
             </span>
           </div>
 
-          <div className="max-h-96 overflow-y-auto rounded-2xl border border-hairline">
-            <table className="w-full text-sm">
+          <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-2xl border border-hairline">
+            <table className="w-full min-w-[480px] text-sm">
               <thead className="sticky top-0 bg-canvas">
                 <tr className="border-b border-hairline text-left text-xs text-muted">
                   <th className="px-3 py-2 font-medium">Date</th>
