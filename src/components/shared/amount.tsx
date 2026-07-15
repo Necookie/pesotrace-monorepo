@@ -13,7 +13,7 @@ export function Amount({
   return (
     <span
       className={cn(
-        "font-mono tabular-nums",
+        "font-mono tabular-nums whitespace-nowrap",
         direction === "send" && "text-down",
         direction === "receive" && "text-up",
         className
