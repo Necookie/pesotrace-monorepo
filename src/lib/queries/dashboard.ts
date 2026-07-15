@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Database } from "@/lib/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -17,7 +18,7 @@ function dayKey(iso: string) {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
-export async function getDashboardStats(
+export const getDashboardStats = cache(async function getDashboardStats(
   supabase: SupabaseClient<Database>,
   storeId: string
 ): Promise<DashboardStats> {
@@ -68,4 +69,4 @@ export async function getDashboardStats(
     topCounterparties,
     trend,
   };
-}
+});
