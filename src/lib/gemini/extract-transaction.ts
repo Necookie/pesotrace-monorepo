@@ -19,24 +19,42 @@ const RESPONSE_SCHEMA = {
   required: ["direction", "category", "amount", "ref_number", "occurred_at", "confidence"],
 };
 
-const PROMPT =
-  "Extract the GCash transaction details from this screenshot, for a remittance " +
-  "store that manually tracks each transaction as Cash In, Cash Out, Load, Bills, " +
-  "or Other on a daily paper log. direction is 'send' if money left the store's " +
-  "wallet, 'receive' if it came in. category classifies the transaction the same " +
-  "way the store already does: 'cash_in' when a customer hands over physical cash " +
-  "and the store sends/transfers GCash to them (a 'Received GCash from...' or " +
-  "'Transfer from...' style receipt where the store is crediting a customer), " +
-  "'cash_out' when a customer sends GCash to the store and receives physical cash " +
-  "back, 'load' for any 'Buy Load' transaction, 'bills' for bills payment " +
-  "receipts, and 'other' for anything else (merchant payments, app purchases, " +
-  "etc). ref_number is the GCash reference number shown on the receipt. " +
-  "occurred_at should be the transaction date/time shown, in ISO 8601 " +
-  "format (assume the current year if no year is shown). counterparty_name " +
-  "and counterparty_number are the other party's name and/or mobile number " +
-  "if shown. Return confidence 0-1 reflecting how certain you are of the " +
-  "extraction based on image clarity and field legibility — use a lower " +
-  "value if any field is blurry, cropped, or ambiguous.";
+function buildPrompt(storePhoneNumbers: string[]): string {
+  const base =
+    "Extract the GCash transaction details from this screenshot, for a remittance " +
+    "store that manually tracks each transaction as Cash In, Cash Out, Load, Bills, " +
+    "or Other on a daily paper log. direction is 'send' if money left the store's " +
+    "wallet, 'receive' if it came in. category classifies the transaction the same " +
+    "way the store already does: 'cash_in' when a customer hands over physical cash " +
+    "and the store sends/transfers GCash to them (a 'Received GCash from...' or " +
+    "'Transfer from...' style receipt where the store is crediting a customer), " +
+    "'cash_out' when a customer sends GCash to the store and receives physical cash " +
+    "back, 'load' for any 'Buy Load' transaction, 'bills' for bills payment " +
+    "receipts, and 'other' for anything else (merchant payments, app purchases, " +
+    "etc). ref_number is the GCash reference number shown on the receipt. " +
+    "occurred_at should be the transaction date/time shown, in ISO 8601 " +
+    "format (assume the current year if no year is shown). counterparty_name " +
+    "and counterparty_number are the other party's name and/or mobile number " +
+    "if shown.";
+
+  const phoneHint =
+    storePhoneNumbers.length > 0
+      ? " The store's own GCash-linked mobile number(s) are: " +
+        storePhoneNumbers.join(", ") +
+        ". Use these to determine direction with certainty rather than guessing from " +
+        "wording: if the receipt shows money moving FROM one of these numbers, " +
+        "direction is 'send'; if it shows money moving TO one of these numbers, " +
+        "direction is 'receive'. counterparty_number should be the OTHER party's " +
+        "number, never one of the store's own numbers."
+      : "";
+
+  const confidenceNote =
+    " Return confidence 0-1 reflecting how certain you are of the extraction based " +
+    "on image clarity and field legibility — use a lower value if any field is " +
+    "blurry, cropped, or ambiguous.";
+
+  return base + phoneHint + confidenceNote;
+}
 
 export type ExtractionResult =
   | { ok: true; data: ExtractedTransaction; cost: ExtractionCost }
@@ -44,7 +62,8 @@ export type ExtractionResult =
 
 export async function extractTransactionFromImage(
   imageBytes: Buffer,
-  mimeType: string
+  mimeType: string,
+  storePhoneNumbers: string[] = []
 ): Promise<ExtractionResult> {
   try {
     const ai = getGeminiClient();
@@ -54,7 +73,7 @@ export async function extractTransactionFromImage(
         {
           role: "user",
           parts: [
-            { text: PROMPT },
+            { text: buildPrompt(storePhoneNumbers) },
             { inlineData: { mimeType, data: imageBytes.toString("base64") } },
           ],
         },
