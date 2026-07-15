@@ -70,22 +70,22 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
                 <tbody>
                   {group.rows.map((row) => (
                     <tr key={row.id} className="border-b border-hairline last:border-0">
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <Link href={`/ledger?txn=${row.id}`} className="text-ink hover:underline">
                           {row.counterparty_name || row.counterparty_number || "Unknown"}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-muted">{formatDateTime(row.occurred_at)}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted" title={row.ref_number}>
+                      <td className="px-4 py-3.5 text-muted">{formatDateTime(row.occurred_at)}</td>
+                      <td className="px-4 py-3.5 font-mono text-xs text-muted" title={row.ref_number}>
                         &hellip;{last4Ref(row.ref_number)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <CategoryBadge category={row.category} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <StatusBadge status={row.status} />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         <Amount value={Number(row.amount)} direction={row.direction} />
                         <div className="font-mono text-xs text-muted">
                           fee {row.fee_computed > 0 ? `₱${row.fee_computed}` : "—"}
