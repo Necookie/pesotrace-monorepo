@@ -15,14 +15,14 @@ export default async function BranchesPage() {
   const totalFees = rows.reduce((sum, r) => sum + Number(r.fee_computed), 0);
 
   return (
-    <div className="rounded-2xl border border-hairline p-6">
+    <div className="rounded-2xl border border-hairline p-4 sm:p-6">
       <h2 className="text-sm font-semibold text-ink">Branches</h2>
       <p className="mt-1 text-xs text-muted">
         Multi-branch comparison — add more branches by inviting staff to additional stores
         (coming soon).
       </p>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-hairline">
+      <div className="mt-4 overflow-x-auto rounded-2xl border border-hairline">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-hairline text-left text-xs text-muted">

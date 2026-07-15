@@ -26,7 +26,7 @@ export function TrendChart({ data }: { data: Point[] }) {
   const barWidth = width / data.length;
 
   return (
-    <div className="rounded-2xl border border-hairline bg-canvas p-6">
+    <div className="rounded-2xl border border-hairline bg-canvas p-4 sm:p-6">
       <div className="mb-4 flex items-center gap-4 text-xs">
         <span className="flex items-center gap-1.5 text-body">
           <span className="size-2 rounded-full bg-down" /> Send

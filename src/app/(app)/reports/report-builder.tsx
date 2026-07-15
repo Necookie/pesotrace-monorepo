@@ -38,7 +38,7 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div className="space-y-4 rounded-2xl border border-hairline p-6">
+      <div className="space-y-4 rounded-2xl border border-hairline p-4 sm:p-6">
         <h2 className="text-sm font-semibold text-ink">Build a report</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -85,16 +85,16 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
         </Button>
       </div>
 
-      <div className="rounded-2xl border border-hairline p-6">
+      <div className="rounded-2xl border border-hairline p-4 sm:p-6">
         <h2 className="text-sm font-semibold text-ink">Preview</h2>
         <div className="mt-4 max-h-80 space-y-3 overflow-y-auto">
           {groups.length === 0 && (
             <p className="text-sm text-muted">No transactions in this range.</p>
           )}
           {groups.map((g) => (
-            <div key={g.key} className="flex items-center justify-between text-sm">
-              <span className="text-body">{g.label}</span>
-              <span className="font-mono text-ink">{formatPeso(Math.abs(g.netTotal))}</span>
+            <div key={g.key} className="flex items-center justify-between text-sm min-w-0 gap-3">
+              <span className="text-body truncate flex-1">{g.label}</span>
+              <span className="font-mono text-ink shrink-0">{formatPeso(Math.abs(g.netTotal))}</span>
             </div>
           ))}
         </div>

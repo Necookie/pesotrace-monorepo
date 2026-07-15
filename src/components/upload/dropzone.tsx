@@ -45,7 +45,7 @@ export function Dropzone({
       }}
       onClick={() => inputRef.current?.click()}
       className={cn(
-        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-12 text-center transition-colors",
+        "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed p-6 sm:p-12 text-center transition-colors",
         dragOver ? "border-primary bg-surface-soft" : "border-hairline hover:bg-surface-soft"
       )}
     >

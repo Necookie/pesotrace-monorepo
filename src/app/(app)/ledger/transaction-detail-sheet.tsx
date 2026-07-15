@@ -71,7 +71,7 @@ export function TransactionDetailSheet() {
         </SheetHeader>
         {loading && <p className="p-4 text-sm text-muted">Loading...</p>}
         {row && (
-          <div className="space-y-4 p-4">
+          <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
             {imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img

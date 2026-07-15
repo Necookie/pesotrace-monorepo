@@ -38,7 +38,7 @@ export function StorePhoneNumbersForm({ initial }: { initial: StorePhoneNumbers 
   }
 
   return (
-    <div className="rounded-2xl border border-hairline p-6">
+    <div className="rounded-2xl border border-hairline p-4 sm:p-6">
       <h2 className="text-sm font-semibold text-ink">Store phone numbers</h2>
       <p className="mt-1 text-xs text-muted">
         Register the GCash-linked mobile numbers your store sends and receives from. When a

@@ -75,7 +75,7 @@ export function ExtractionReviewCard({
     Number(watchedFee) === computeFee(Number(watchedAmount) || 0, feeTierConfig);
 
   return (
-    <div className="grid grid-cols-1 gap-6 rounded-2xl border border-hairline p-6 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 rounded-2xl border border-hairline p-4 sm:p-6 md:grid-cols-2">
       <div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

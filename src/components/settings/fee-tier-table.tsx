@@ -41,7 +41,7 @@ export function FeeTierTable({ initial }: { initial: FeeTierConfig }) {
   }
 
   return (
-    <div className="rounded-2xl border border-hairline p-6">
+    <div className="rounded-2xl border border-hairline p-4 sm:p-6">
       <h2 className="text-sm font-semibold text-ink">Fee tiers</h2>
       <p className="mt-1 text-xs text-muted">
         Define your own charge ranges (e.g. ₱100–500 → ₱10, ₱501–1,000 → ₱15, ₱1,000+ → ₱20 per
@@ -52,7 +52,7 @@ export function FeeTierTable({ initial }: { initial: FeeTierConfig }) {
       <div className="mt-4 space-y-4">
         {tiers.map((tier, i) => (
           <div key={i} className="rounded-xl border border-hairline p-3">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               <div className="space-y-1">
                 <Label className="text-xs text-muted">Min (₱)</Label>
                 <Input
