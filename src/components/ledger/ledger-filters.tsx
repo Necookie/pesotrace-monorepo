@@ -39,7 +39,7 @@ export function LedgerFilters() {
               key={d}
               onClick={() => updateParam("direction", direction === d ? null : d)}
               className={cn(
-                "rounded-pill px-3 py-1.5 text-sm font-medium capitalize",
+                "rounded-pill px-3 py-1.5 text-sm font-medium capitalize transition-all duration-200 hover:shadow-sm",
                 direction === d ? "bg-surface-strong text-primary" : "text-body"
               )}
             >
@@ -53,7 +53,7 @@ export function LedgerFilters() {
               key={value}
               onClick={() => updateParam("category", category === value ? null : value)}
               className={cn(
-                "rounded-pill px-3 py-1.5 text-sm font-medium",
+                "rounded-pill px-3 py-1.5 text-sm font-medium transition-all duration-200 hover:shadow-sm",
                 category === value ? "bg-surface-strong text-primary" : "text-body"
               )}
             >
@@ -70,7 +70,7 @@ export function LedgerFilters() {
               key={s.value}
               onClick={() => updateParam("status", status === s.value ? null : s.value)}
               className={cn(
-                "rounded-pill px-3 py-1.5 text-sm font-medium",
+                "rounded-pill px-3 py-1.5 text-sm font-medium transition-all duration-200 hover:shadow-sm",
                 status === s.value ? "bg-surface-strong text-primary" : "text-body"
               )}
             >
