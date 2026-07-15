@@ -13,7 +13,8 @@ export type TransactionFilters = {
 export async function listTransactions(
   supabase: SupabaseClient<Database>,
   storeId: string,
-  filters: TransactionFilters = {}
+  filters: TransactionFilters = {},
+  limit = 500
 ) {
   let query = supabase
     .from("transactions")
@@ -37,7 +38,7 @@ export async function listTransactions(
     );
   }
 
-  const { data, error } = await query.limit(500);
+  const { data, error } = await query.limit(limit);
   if (error) throw error;
   return data;
 }
