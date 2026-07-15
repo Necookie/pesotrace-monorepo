@@ -47,7 +47,7 @@ export function TrendChart({ data }: { data: Point[] }) {
                 height={receiveH}
                 className="fill-up"
               />
-              <title>
+              <title suppressHydrationWarning>
                 {d.label}: send {formatPeso(d.send)}, receive {formatPeso(d.receive)}
               </title>
             </g>
