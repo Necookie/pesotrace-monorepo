@@ -58,7 +58,9 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
               <h3 className="text-sm font-semibold text-ink">{group.label}</h3>
               <Amount value={Math.abs(group.netTotal)} direction={group.netTotal >= 0 ? "receive" : "send"} />
             </div>
-            <div className="overflow-hidden rounded-2xl border border-hairline">
+
+            {/* Desktop: table */}
+            <div className="hidden overflow-hidden rounded-2xl border border-hairline md:block">
               <table className="w-full text-sm">
                 <tbody>
                   {group.rows.map((row) => (
@@ -88,6 +90,39 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile: stacked cards */}
+            <div className="flex flex-col gap-2 md:hidden">
+              {group.rows.map((row) => (
+                <Link
+                  key={row.id}
+                  href={`/ledger?txn=${row.id}`}
+                  className="rounded-2xl border border-hairline p-4"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">
+                        {row.counterparty_name || row.counterparty_number || "Unknown"}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted">{formatDateTime(row.occurred_at)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <Amount value={Number(row.amount)} direction={row.direction} />
+                      <div className="font-mono text-xs text-muted">
+                        fee {row.fee_computed > 0 ? `₱${row.fee_computed}` : "—"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CategoryBadge category={row.category} />
+                      <StatusBadge status={row.status} />
+                    </div>
+                    <span className="font-mono text-xs text-muted">&hellip;{last4Ref(row.ref_number)}</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         ))}
