@@ -8,20 +8,20 @@ import { reconcileStatement } from "@/lib/reconciliation";
 import { computeFee } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function confirmStatementImport(rows: StatementRow[], sourceFileUrl: string | null) {
   const parsed = rows.map((r) => statementRowSchema.safeParse(r));
   if (parsed.some((p) => !p.success)) {
     return { ok: false as const, error: "Some rows failed validation" };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  const { userId } = await auth();
+  if (!userId) {
     return { ok: false as const, error: "Not authenticated" };
   }
 
+  const supabase = await createClient();
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) {
     return { ok: false as const, error: "No store found" };
@@ -59,7 +59,7 @@ export async function confirmStatementImport(rows: StatementRow[], sourceFileUrl
       notes: reconciliation[i]?.mismatch
         ? `Balance mismatch: expected ${reconciliation[i].expectedBalance.toFixed(2)}, statement shows ${reconciliation[i].statedBalance.toFixed(2)}`
         : null,
-      created_by: user.id,
+      created_by: userId,
     };
   });
 

@@ -11,19 +11,20 @@ import {
 import { computeFee } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function confirmTransaction(input: TransactionConfirmInput) {
   const parsed = transactionConfirmInputSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: "Invalid transaction data" };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  const { userId } = await auth();
+  if (!userId) {
     return { ok: false as const, error: "Not authenticated" };
   }
+
+  const supabase = await createClient();
 
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) {
@@ -57,7 +58,7 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
     source_file_url: parsed.data.source_file_url ?? null,
     confidence: parsed.data.confidence,
     notes: parsed.data.notes ?? null,
-    created_by: user.id,
+    created_by: userId,
   });
 
   if (error) {

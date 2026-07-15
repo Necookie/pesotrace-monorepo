@@ -4,20 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { extractTransactionFromImage } from "@/lib/gemini/extract-transaction";
 
+import { auth } from "@clerk/nextjs/server";
+
 export const maxDuration = 60;
 
 const ALLOWED_MIME = ["image/png", "image/jpeg", "image/jpg"];
 const MAX_BYTES = 10 * 1024 * 1024;
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { userId } = await auth();
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) {

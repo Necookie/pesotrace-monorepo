@@ -5,19 +5,20 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { extractStatementFromPdf } from "@/lib/gemini/extract-statement";
 import { reconcileStatement } from "@/lib/reconciliation";
 
+import { auth } from "@clerk/nextjs/server";
+
 export const maxDuration = 60;
 
 const MAX_BYTES = 15 * 1024 * 1024;
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { userId } = await auth();
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) {

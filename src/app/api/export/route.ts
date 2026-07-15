@@ -4,14 +4,15 @@ import { getCurrentStoreId, listTransactions } from "@/lib/queries/transactions"
 import { transactionsToCsv } from "@/lib/csv";
 import { transactionsToPdf } from "@/lib/pdf";
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  const { userId } = await auth();
+  if (!userId) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) {

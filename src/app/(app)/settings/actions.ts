@@ -5,23 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { feeTierConfigSchema, type FeeTierConfig } from "@/lib/schemas/fee-tier";
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function updateFeeTiers(config: FeeTierConfig) {
   const parsed = feeTierConfigSchema.safeParse(config);
   if (!parsed.success) {
     return { ok: false as const, error: "Invalid fee tier configuration" };
   }
 
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+
   const supabase = await createClient();
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) return { ok: false as const, error: "No store found" };
 
-  const { data: profile } = await supabase.auth.getUser();
-  if (!profile.user) return { ok: false as const, error: "Not authenticated" };
-
   const { data: myProfile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", profile.user.id)
+    .eq("id", userId)
     .single();
 
   if (myProfile?.role !== "owner" && myProfile?.role !== "manager") {

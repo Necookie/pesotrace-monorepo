@@ -37,16 +37,16 @@ export async function listTransactions(
   return data;
 }
 
+import { auth } from "@clerk/nextjs/server";
+
 export async function getCurrentStoreId(supabase: SupabaseClient<Database>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { userId } = await auth();
+  if (!userId) return null;
 
   const { data } = await supabase
     .from("profiles")
     .select("store_id")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   return data?.store_id ?? null;
