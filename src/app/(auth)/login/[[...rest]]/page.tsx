@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
 import { Logo } from "@/components/brand/logo";
 
@@ -33,6 +34,12 @@ export default function LoginPage() {
             fallbackRedirectUrl="/dashboard"
             appearance={{ elements: { logoBox: { display: "none" } } }}
           />
+          <p className="mt-6 text-sm text-body">
+            Don&apos;t have an account?{" "}
+            <Link href="/sign-up" className="font-medium text-primary">
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>
