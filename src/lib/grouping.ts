@@ -8,6 +8,8 @@ export type TransactionGroup = {
   label: string;
   rows: Row[];
   netTotal: number;
+  sendTotal: number;
+  receiveTotal: number;
 };
 
 function startOfWeek(d: Date) {
@@ -48,13 +50,25 @@ export function groupTransactions(rows: Row[], period: GroupPeriod): Transaction
   for (const row of rows) {
     const { key, label } = groupKey(row.occurred_at, period);
     const existing = groups.get(key);
-    const signedAmount = row.direction === "receive" ? Number(row.amount) : -Number(row.amount);
+    const amount = Number(row.amount);
+    const signedAmount = row.direction === "receive" ? amount : -amount;
+    const send = row.direction === "send" ? amount : 0;
+    const receive = row.direction === "receive" ? amount : 0;
 
     if (existing) {
       existing.rows.push(row);
       existing.netTotal += signedAmount;
+      existing.sendTotal += send;
+      existing.receiveTotal += receive;
     } else {
-      groups.set(key, { key, label, rows: [row], netTotal: signedAmount });
+      groups.set(key, {
+        key,
+        label,
+        rows: [row],
+        netTotal: signedAmount,
+        sendTotal: send,
+        receiveTotal: receive,
+      });
     }
   }
 
