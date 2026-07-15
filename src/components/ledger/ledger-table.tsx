@@ -55,9 +55,13 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
       <div className="space-y-6">
         {groups.map((group) => (
           <div key={group.key}>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface-soft px-4 py-2.5">
               <h3 className="text-sm font-semibold text-ink">{group.label}</h3>
-              <Amount value={Math.abs(group.netTotal)} direction={group.netTotal >= 0 ? "receive" : "send"} />
+              <Amount
+                value={Math.abs(group.netTotal)}
+                direction={group.netTotal >= 0 ? "receive" : "send"}
+                className="text-sm font-semibold"
+              />
             </div>
 
             {/* Desktop: table */}
