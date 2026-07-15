@@ -19,12 +19,14 @@ export type Database = {
           id: string;
           name: string;
           fee_tier_config: FeeTier[];
+          phone_numbers: string[];
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
           fee_tier_config?: FeeTier[];
+          phone_numbers?: string[];
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["stores"]["Insert"]>;
