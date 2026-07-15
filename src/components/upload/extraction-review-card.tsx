@@ -81,7 +81,7 @@ export function ExtractionReviewCard({
         )}
         className="flex flex-col gap-3"
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label>Direction</Label>
             <select
@@ -114,7 +114,7 @@ export function ExtractionReviewCard({
           <Label>Reference No.</Label>
           <Input {...form.register("ref_number")} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Counterparty name</Label>
             <Input {...form.register("counterparty_name")} />
