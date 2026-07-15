@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId, listTransactions } from "@/lib/queries/transactions";
+import type { TransactionCategory } from "@/lib/database.types";
 import { LedgerTable } from "@/components/ledger/ledger-table";
 import { LedgerFilters } from "@/components/ledger/ledger-filters";
 import { TransactionDetailSheet } from "./transaction-detail-sheet";
@@ -16,6 +17,7 @@ export default async function LedgerPage({
   const rows = storeId
     ? await listTransactions(supabase, storeId, {
         direction: params.direction as "send" | "receive" | undefined,
+        category: params.category as TransactionCategory | undefined,
         status: params.status as "needs_review" | "confirmed" | undefined,
         search: params.search,
       })

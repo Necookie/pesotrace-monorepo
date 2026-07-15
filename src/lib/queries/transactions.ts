@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/database.types";
+import type { Database, TransactionCategory } from "@/lib/database.types";
 
 export type TransactionFilters = {
   direction?: "send" | "receive";
+  category?: TransactionCategory;
   status?: "needs_review" | "confirmed";
   search?: string;
   from?: string;
@@ -21,6 +22,7 @@ export async function listTransactions(
     .order("occurred_at", { ascending: false });
 
   if (filters.direction) query = query.eq("direction", filters.direction);
+  if (filters.category) query = query.eq("category", filters.category);
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.from) query = query.gte("occurred_at", filters.from);
   if (filters.to) query = query.lte("occurred_at", filters.to);

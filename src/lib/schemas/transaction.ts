@@ -1,6 +1,29 @@
 import { z } from "zod";
 
 /**
+ * Category matches how the store already classifies transactions on their
+ * paper daily-summary sheet (Cash In / Cash Out / Load / Bills / Other),
+ * distinct from `direction` which just drives balance math (send/receive
+ * from the store's own GCash wallet).
+ */
+export const transactionCategorySchema = z.enum([
+  "cash_in",
+  "cash_out",
+  "load",
+  "bills",
+  "other",
+]);
+export type TransactionCategory = z.infer<typeof transactionCategorySchema>;
+
+export const CATEGORY_LABELS: Record<TransactionCategory, string> = {
+  cash_in: "Cash In",
+  cash_out: "Cash Out",
+  load: "Load",
+  bills: "Bills",
+  other: "Other",
+};
+
+/**
  * Single source of truth for the fields Gemini extracts and the user edits
  * in the upload review card. Reused for: (1) validating Gemini's response,
  * (2) the review form's zodResolver, (3) the base that the insert schema
@@ -8,6 +31,7 @@ import { z } from "zod";
  */
 export const extractedTransactionSchema = z.object({
   direction: z.enum(["send", "receive"]),
+  category: transactionCategorySchema,
   amount: z.coerce.number().positive(),
   ref_number: z.string().min(1, "Reference number is required"),
   counterparty_name: z.string().nullable().optional(),
@@ -52,4 +76,9 @@ export const CONFIDENCE_REVIEW_THRESHOLD = 0.85;
 
 export function deriveStatus(confidence: number): "needs_review" | "confirmed" {
   return confidence < CONFIDENCE_REVIEW_THRESHOLD ? "needs_review" : "confirmed";
+}
+
+/** Last 4 digits of the reference number — the store's own quick-lookup shorthand. */
+export function last4Ref(refNumber: string): string {
+  return refNumber.slice(-4);
 }

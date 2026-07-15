@@ -6,6 +6,8 @@ import { groupTransactions, type GroupPeriod } from "@/lib/grouping";
 import { formatDateTime } from "@/lib/format";
 import { Amount } from "@/components/shared/amount";
 import { StatusBadge } from "@/components/ledger/status-badge";
+import { CategoryBadge } from "@/components/ledger/category-badge";
+import { last4Ref } from "@/lib/schemas/transaction";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/database.types";
 
@@ -67,12 +69,20 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-muted">{formatDateTime(row.occurred_at)}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted">{row.ref_number}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted" title={row.ref_number}>
+                        &hellip;{last4Ref(row.ref_number)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <CategoryBadge category={row.category} />
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={row.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Amount value={Number(row.amount)} direction={row.direction} />
+                        <div className="font-mono text-xs text-muted">
+                          fee {row.fee_computed > 0 ? `₱${row.fee_computed}` : "—"}
+                        </div>
                       </td>
                     </tr>
                   ))}

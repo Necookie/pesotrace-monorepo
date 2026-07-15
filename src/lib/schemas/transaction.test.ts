@@ -5,6 +5,7 @@ describe("extractedTransactionSchema", () => {
   it("accepts a valid Gemini extraction payload", () => {
     const result = extractedTransactionSchema.safeParse({
       direction: "send",
+      category: "cash_out",
       amount: 1010,
       ref_number: "5042814017377",
       counterparty_name: "GoTyme Bank",
@@ -18,6 +19,7 @@ describe("extractedTransactionSchema", () => {
   it("coerces numeric strings for amount and confidence", () => {
     const result = extractedTransactionSchema.safeParse({
       direction: "receive",
+      category: "cash_in",
       amount: "1600.00",
       ref_number: "4042548978339",
       occurred_at: "2026-07-04T21:43:00",

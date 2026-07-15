@@ -1,6 +1,7 @@
 export type TransactionDirection = "send" | "receive";
 export type TransactionStatus = "needs_review" | "confirmed";
 export type TransactionSource = "screenshot" | "statement" | "manual";
+export type TransactionCategory = "cash_in" | "cash_out" | "load" | "bills" | "other";
 export type ProfileRole = "owner" | "manager" | "staff";
 
 export type FeeTier = {
@@ -59,6 +60,7 @@ export type Database = {
           id: string;
           store_id: string;
           direction: TransactionDirection;
+          category: TransactionCategory;
           amount: number;
           ref_number: string;
           counterparty_number: string | null;
@@ -78,6 +80,7 @@ export type Database = {
           id?: string;
           store_id: string;
           direction: TransactionDirection;
+          category?: TransactionCategory;
           amount: number;
           ref_number: string;
           counterparty_number?: string | null;
@@ -110,6 +113,7 @@ export type Database = {
       transaction_direction: TransactionDirection;
       transaction_status: TransactionStatus;
       transaction_source: TransactionSource;
+      transaction_category: TransactionCategory;
       profile_role: ProfileRole;
     };
     CompositeTypes: Record<string, never>;

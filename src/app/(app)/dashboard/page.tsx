@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <KpiTile label="Volume (30d)" value={formatPeso(stats.totalVolume)} />
         <KpiTile label="Transactions" value={String(stats.transactionCount)} />
-        <KpiTile label="Fees Earned" value={formatPeso(stats.feesEarned)} />
+        <KpiTile label="Total Income" value={formatPeso(stats.feesEarned)} />
         <KpiTile label="Avg. Size" value={formatPeso(stats.avgSize)} />
       </div>
 

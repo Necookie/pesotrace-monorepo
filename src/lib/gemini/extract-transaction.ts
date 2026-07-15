@@ -8,6 +8,7 @@ const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     direction: { type: Type.STRING, enum: ["send", "receive"] },
+    category: { type: Type.STRING, enum: ["cash_in", "cash_out", "load", "bills", "other"] },
     amount: { type: Type.NUMBER },
     ref_number: { type: Type.STRING },
     counterparty_name: { type: Type.STRING },
@@ -15,13 +16,21 @@ const RESPONSE_SCHEMA = {
     occurred_at: { type: Type.STRING, description: "ISO 8601 datetime" },
     confidence: { type: Type.NUMBER, description: "0 to 1" },
   },
-  required: ["direction", "amount", "ref_number", "occurred_at", "confidence"],
+  required: ["direction", "category", "amount", "ref_number", "occurred_at", "confidence"],
 };
 
 const PROMPT =
-  "Extract the GCash transaction details from this screenshot. direction is " +
-  "'send' if money left the user's wallet, 'receive' if it came in. " +
-  "ref_number is the GCash reference number shown on the receipt. " +
+  "Extract the GCash transaction details from this screenshot, for a remittance " +
+  "store that manually tracks each transaction as Cash In, Cash Out, Load, Bills, " +
+  "or Other on a daily paper log. direction is 'send' if money left the store's " +
+  "wallet, 'receive' if it came in. category classifies the transaction the same " +
+  "way the store already does: 'cash_in' when a customer hands over physical cash " +
+  "and the store sends/transfers GCash to them (a 'Received GCash from...' or " +
+  "'Transfer from...' style receipt where the store is crediting a customer), " +
+  "'cash_out' when a customer sends GCash to the store and receives physical cash " +
+  "back, 'load' for any 'Buy Load' transaction, 'bills' for bills payment " +
+  "receipts, and 'other' for anything else (merchant payments, app purchases, " +
+  "etc). ref_number is the GCash reference number shown on the receipt. " +
   "occurred_at should be the transaction date/time shown, in ISO 8601 " +
   "format (assume the current year if no year is shown). counterparty_name " +
   "and counterparty_number are the other party's name and/or mobile number " +

@@ -7,7 +7,11 @@ import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { extractedTransactionSchema, type ExtractedTransaction } from "@/lib/schemas/transaction";
+import {
+  extractedTransactionSchema,
+  CATEGORY_LABELS,
+  type ExtractedTransaction,
+} from "@/lib/schemas/transaction";
 import type { ExtractionCost } from "@/lib/gemini/pricing";
 import { formatExtractionCost } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -77,7 +81,7 @@ export function ExtractionReviewCard({
         )}
         className="flex flex-col gap-3"
       >
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
             <Label>Direction</Label>
             <select
@@ -86,6 +90,19 @@ export function ExtractionReviewCard({
             >
               <option value="send">Send</option>
               <option value="receive">Receive</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Category</Label>
+            <select
+              {...form.register("category")}
+              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm"
+            >
+              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">

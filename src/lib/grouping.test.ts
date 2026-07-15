@@ -9,6 +9,7 @@ function row(overrides: Partial<Row>): Row {
     id: crypto.randomUUID(),
     store_id: "store-1",
     direction: "send",
+    category: "other",
     amount: 100,
     ref_number: "ref",
     counterparty_number: null,

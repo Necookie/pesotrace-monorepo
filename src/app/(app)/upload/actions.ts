@@ -43,6 +43,7 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
   const { error } = await supabase.from("transactions").insert({
     store_id: storeId,
     direction: parsed.data.direction,
+    category: parsed.data.category,
     amount: parsed.data.amount,
     ref_number: parsed.data.ref_number,
     counterparty_name: parsed.data.counterparty_name ?? null,

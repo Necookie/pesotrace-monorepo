@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
+import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
 import { cn } from "@/lib/utils";
 
 export function LedgerFilters() {
@@ -20,6 +21,7 @@ export function LedgerFilters() {
 
   const direction = searchParams.get("direction");
   const status = searchParams.get("status");
+  const category = searchParams.get("category");
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -41,6 +43,20 @@ export function LedgerFilters() {
             )}
           >
             {d}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+          <button
+            key={value}
+            onClick={() => updateParam("category", category === value ? null : value)}
+            className={cn(
+              "rounded-pill px-3 py-1.5 text-sm font-medium",
+              category === value ? "bg-surface-strong text-primary" : "text-body"
+            )}
+          >
+            {label}
           </button>
         ))}
       </div>
