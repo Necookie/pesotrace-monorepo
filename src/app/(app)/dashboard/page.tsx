@@ -4,10 +4,11 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { getDashboardStats } from "@/lib/queries/dashboard";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { SendReceiveChart } from "@/components/charts/send-receive-chart";
-import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
+import { PieBreakdownChart } from "@/components/charts/pie-breakdown-chart";
 import { TopCounterparties } from "@/components/dashboard/top-counterparties";
 import { buttonVariants } from "@/components/ui/button";
 import { formatPeso } from "@/lib/format";
+import { CATEGORY_CHART_COLORS } from "@/lib/chart-colors";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -64,10 +65,29 @@ export default async function DashboardPage() {
         <TopCounterparties items={stats.topCounterparties} />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
           <h2 className="mb-3 text-sm font-semibold text-ink">By category</h2>
-          <CategoryBreakdownChart data={stats.categoryTotals} />
+          <PieBreakdownChart
+            centerLabel="volume"
+            data={stats.categoryTotals.map((c) => ({
+              key: c.category,
+              label: c.label,
+              value: c.amount,
+              color: CATEGORY_CHART_COLORS[c.category],
+            }))}
+          />
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-ink">Review status</h2>
+          <PieBreakdownChart
+            centerLabel="transactions"
+            valueFormatter={(v) => String(v)}
+            data={[
+              { key: "confirmed", label: "Confirmed", value: stats.statusBreakdown.confirmed, color: "var(--color-up)" },
+              { key: "needs_review", label: "Needs review", value: stats.statusBreakdown.needsReview, color: "var(--color-chart-bills)" },
+            ]}
+          />
         </div>
       </div>
     </div>
