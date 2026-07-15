@@ -28,7 +28,12 @@ export default function RootLayout({
           colorPrimaryForeground: "#ffffff",
           colorForeground: "#0a0b0d",
           fontFamily: "var(--font-inter)",
-          borderRadius: "100px",
+        },
+        elements: {
+          card: { borderRadius: "24px" },
+          formButtonPrimary: { borderRadius: "9999px" },
+          socialButtonsBlockButton: { borderRadius: "9999px" },
+          formFieldInput: { borderRadius: "9999px" },
         },
       }}
     >
