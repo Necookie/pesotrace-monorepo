@@ -24,7 +24,7 @@ export default async function LedgerPage({
     : [];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-6">
+    <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
       <h1 className="text-2xl font-medium text-ink">Ledger</h1>
       <LedgerFilters />
       <LedgerTable rows={rows} />

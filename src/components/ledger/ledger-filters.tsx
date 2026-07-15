@@ -30,7 +30,7 @@ export function LedgerFilters() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && updateParam("search", search || null)}
-        className="max-w-xs"
+        className="w-full sm:max-w-xs"
       />
       <div className="flex gap-1">
         {["send", "receive"].map((d) => (
@@ -46,7 +46,7 @@ export function LedgerFilters() {
           </button>
         ))}
       </div>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1">
         {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
           <button
             key={value}

@@ -8,7 +8,7 @@ export default async function ReportsPage() {
   const rows = storeId ? await listTransactions(supabase, storeId) : [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 p-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 sm:p-6">
       <h1 className="text-2xl font-medium text-ink">Reports / Export</h1>
       <ReportBuilder rows={rows} />
     </div>

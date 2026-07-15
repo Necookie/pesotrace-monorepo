@@ -106,8 +106,8 @@ export function UploadFlow() {
   const processedCount = queue.filter((q) => q.cost).length;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-medium text-ink">Upload Transactions</h1>
         {processedCount > 0 && (
           <span className="rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-mono text-muted">
@@ -116,7 +116,7 @@ export function UploadFlow() {
         )}
       </div>
 
-      <div className="flex w-fit rounded-pill bg-surface-strong p-1">
+      <div className="flex w-full gap-1 overflow-x-auto rounded-pill bg-surface-strong p-1 sm:w-fit">
         {(
           [
             { value: "single", label: "Single Image" },
@@ -129,7 +129,7 @@ export function UploadFlow() {
             type="button"
             onClick={() => setTab(t.value)}
             className={cn(
-              "rounded-pill px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+              "shrink-0 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
               tab === t.value ? "bg-canvas text-ink shadow-sm" : "text-body"
             )}
           >
