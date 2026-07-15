@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let storeName = "My Store";
 
   // Check if profile exists for this Clerk user
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from("profiles")
     .select("store_id")
     .eq("id", user.id)
@@ -46,13 +46,29 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       });
 
     if (profileError) {
-      console.error("Failed to create profile on onboarding:", profileError.message);
-      throw profileError;
-    }
+      if (profileError.code === "23505") {
+        // Handle concurrent request race condition gracefully:
+        // Fetch the profile that was just inserted by the concurrent request
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("store_id")
+          .eq("id", user.id)
+          .single();
+        profile = existingProfile;
 
-    storeName = store.name;
-  } else {
-    // Profile exists, load store name
+        // Clean up the orphan store we just created to keep database clean
+        await supabase.from("stores").delete().eq("id", store.id);
+      } else {
+        console.error("Failed to create profile on onboarding:", profileError.message);
+        throw profileError;
+      }
+    } else {
+      profile = { store_id: store.id };
+    }
+  }
+
+  // Load store name
+  if (profile) {
     const { data: store } = await supabase
       .from("stores")
       .select("name")
