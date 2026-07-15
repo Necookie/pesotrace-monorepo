@@ -34,6 +34,7 @@ export default function RootLayout({
           formButtonPrimary: { borderRadius: "9999px" },
           socialButtonsBlockButton: { borderRadius: "9999px" },
           formFieldInput: { borderRadius: "9999px" },
+          footer: { display: "none" },
         },
       }}
     >
