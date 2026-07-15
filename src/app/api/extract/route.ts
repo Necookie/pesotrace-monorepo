@@ -25,6 +25,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No store found for this user" }, { status: 400 });
   }
 
+  const { data: store } = await supabase
+    .from("stores")
+    .select("phone_numbers")
+    .eq("id", storeId)
+    .single();
+  const storePhoneNumbers = store?.phone_numbers ?? [];
+
   const formData = await request.formData();
   const file = formData.get("file");
 
@@ -44,7 +51,7 @@ export async function POST(request: Request) {
   const objectPath = `${storeId}/${randomUUID()}.${extension}`;
 
   const [extractionResult, uploadResult] = await Promise.all([
-    extractTransactionFromImage(buffer, file.type),
+    extractTransactionFromImage(buffer, file.type, storePhoneNumbers),
     supabase.storage.from("transaction-sources").upload(objectPath, buffer, {
       contentType: file.type,
       upsert: false,
