@@ -37,7 +37,9 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
     .single();
 
   const feeTierConfig = store?.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG;
-  const fee = computeFee(parsed.data.amount, feeTierConfig);
+  // A fee the user picked or typed in wins over the auto-computed tier match
+  // — never silently overridden once they've made a choice.
+  const fee = parsed.data.fee ?? computeFee(parsed.data.amount, feeTierConfig);
   const status = deriveStatus(parsed.data.confidence);
 
   const { error } = await supabase.from("transactions").insert({
@@ -54,6 +56,7 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
     source_type: parsed.data.source_type,
     source_file_url: parsed.data.source_file_url ?? null,
     confidence: parsed.data.confidence,
+    notes: parsed.data.notes ?? null,
     created_by: user.id,
   });
 
