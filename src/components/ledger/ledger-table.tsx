@@ -33,7 +33,7 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
 
   if (rows.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-hairline py-16 text-center">
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-hairline bg-[url('/empty-state-background.jpg')] bg-cover bg-center py-16 text-center">
         <p className="text-sm font-medium text-ink">No transactions match these filters</p>
         <Link href="/ledger" className="text-sm text-primary">
           Clear filters
