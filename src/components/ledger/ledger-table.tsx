@@ -76,13 +76,13 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
             <div className="hidden overflow-hidden rounded-2xl border border-hairline md:block">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
-                  <col className="w-[22%]" />
-                  <col className="w-[18%]" />
                   <col className="w-[20%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[17%]" />
                   <col className="w-[12%]" />
                   <col className="w-[12%]" />
-                  <col className="w-[13%]" />
-                  <col className="w-[3%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[8%]" />
                 </colgroup>
                 <tbody>
                   {group.rows.map((row) => (
@@ -108,9 +108,9 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
                           fee {row.fee_computed > 0 ? `₱${row.fee_computed}` : "—"}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="px-2 py-3.5 text-center">
                         <DropdownMenu>
-                          <DropdownMenuTrigger className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-strong hover:text-ink transition-colors outline-none mx-auto">
+                          <DropdownMenuTrigger className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface-strong hover:text-ink transition-colors outline-none mx-auto">
                             <MoreVertical className="size-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
