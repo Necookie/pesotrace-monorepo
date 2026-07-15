@@ -1,4 +1,4 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 
 const VALUE_PROPS = [
   "Upload screenshots, get structured data",
@@ -6,7 +6,7 @@ const VALUE_PROPS = [
   "Fee tier tracking built-in",
 ];
 
-export default function LoginPage() {
+export default function SignUpPage() {
   return (
     <div className="flex min-h-screen">
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center bg-surface-soft px-16">
@@ -25,10 +25,10 @@ export default function LoginPage() {
           <div className="mb-4 text-center lg:hidden">
             <span className="text-2xl font-semibold text-ink">PesoTrace</span>
           </div>
-          <SignIn
+          <SignUp
             routing="path"
-            path="/login"
-            signUpUrl="/sign-up"
+            path="/sign-up"
+            signInUrl="/login"
             fallbackRedirectUrl="/dashboard"
           />
         </div>
