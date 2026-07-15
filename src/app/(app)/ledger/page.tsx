@@ -25,8 +25,8 @@ export default async function LedgerPage({
     : [];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-2">
+    <div className="mx-auto max-w-5xl space-y-5 p-4 sm:space-y-6 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-medium text-ink">Ledger</h1>
         <ExportDialog />
       </div>
