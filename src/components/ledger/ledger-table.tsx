@@ -36,14 +36,15 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
 
   return (
     <div>
-      <div className="mb-4 flex gap-1">
+      <div className="mb-5 flex w-fit rounded-pill bg-surface-strong p-1">
         {PERIODS.map((p) => (
           <button
             key={p.value}
+            type="button"
             onClick={() => setPeriod(p.value)}
             className={cn(
-              "rounded-pill px-3 py-1.5 text-sm font-medium",
-              period === p.value ? "bg-surface-strong text-primary" : "text-body"
+              "rounded-pill px-4 py-1.5 text-sm font-medium transition-colors",
+              period === p.value ? "bg-canvas text-ink shadow-sm" : "text-body"
             )}
           >
             {p.label}
