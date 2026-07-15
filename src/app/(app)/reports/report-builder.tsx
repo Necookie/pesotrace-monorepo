@@ -6,6 +6,7 @@ import { formatPeso } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/database.types";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
@@ -20,6 +21,7 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
   const [from, setFrom] = useState(isoDaysAgo(30));
   const [to, setTo] = useState(isoDaysAgo(0));
   const [grouping, setGrouping] = useState<GroupPeriod>("weekly");
+  const [format, setFormat] = useState<"csv" | "pdf">("csv");
 
   const filtered = useMemo(
     () =>
@@ -32,13 +34,13 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
 
   const groups = useMemo(() => groupTransactions(filtered, grouping), [filtered, grouping]);
 
-  const downloadUrl = `/api/export?from=${from}&to=${to}`;
+  const downloadUrl = `/api/export?format=${format}&from=${from}&to=${to}`;
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div className="space-y-4 rounded-2xl border border-hairline p-6">
         <h2 className="text-sm font-semibold text-ink">Build a report</h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Start date</Label>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -62,17 +64,24 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
         </div>
         <div className="space-y-1.5">
           <Label>Format</Label>
-          <div className="flex items-center gap-2">
-            <span className="rounded-pill bg-surface-strong px-3 py-1.5 text-sm text-ink">
-              CSV
-            </span>
-            <span className="rounded-pill bg-surface-soft px-3 py-1.5 text-sm text-muted">
-              PDF (coming soon)
-            </span>
+          <div className="flex w-fit rounded-pill bg-surface-strong p-1">
+            {(["csv", "pdf"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFormat(f)}
+                className={cn(
+                  "rounded-pill px-4 py-1.5 text-sm font-medium uppercase transition-colors",
+                  format === f ? "bg-canvas text-ink shadow-sm" : "text-body"
+                )}
+              >
+                {f}
+              </button>
+            ))}
           </div>
         </div>
         <Button type="button" onClick={() => window.open(downloadUrl, "_blank")}>
-          Download CSV
+          Download {format.toUpperCase()}
         </Button>
       </div>
 
