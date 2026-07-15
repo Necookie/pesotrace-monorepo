@@ -98,7 +98,7 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
             </div>
 
             {/* Mobile: stacked cards */}
-            <div className="flex flex-col gap-2 md:hidden">
+            <div className="flex flex-col gap-3 md:hidden">
               {group.rows.map((row) => (
                 <Link
                   key={row.id}
