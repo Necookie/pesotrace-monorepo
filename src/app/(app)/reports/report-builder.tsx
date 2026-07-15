@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/lib/database.types";
+import type { Database, TransactionCategory } from "@/lib/database.types";
+import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
+import { SendReceiveChart } from "@/components/charts/send-receive-chart";
+import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -34,69 +37,102 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
 
   const groups = useMemo(() => groupTransactions(filtered, grouping), [filtered, grouping]);
 
+  const trend = useMemo(
+    () =>
+      [...groups]
+        .sort((a, b) => a.key.localeCompare(b.key))
+        .map((g) => ({ label: g.label, send: g.sendTotal, receive: g.receiveTotal })),
+    [groups]
+  );
+
+  const categoryTotals = useMemo(() => {
+    const totals = new Map<TransactionCategory, number>();
+    for (const r of filtered) {
+      totals.set(r.category, (totals.get(r.category) ?? 0) + Number(r.amount));
+    }
+    return (Object.keys(CATEGORY_LABELS) as TransactionCategory[]).map((category) => ({
+      category,
+      label: CATEGORY_LABELS[category],
+      amount: totals.get(category) ?? 0,
+    }));
+  }, [filtered]);
+
   const downloadUrl = `/api/export?format=${format}&from=${from}&to=${to}`;
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div className="space-y-4 rounded-2xl border border-hairline p-4 sm:p-6">
-        <h2 className="text-sm font-semibold text-ink">Build a report</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>Start date</Label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="space-y-4 rounded-2xl border border-hairline p-4 sm:p-6">
+          <h2 className="text-sm font-semibold text-ink">Build a report</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Start date</Label>
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>End date</Label>
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </div>
           </div>
           <div className="space-y-1.5">
-            <Label>End date</Label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <Label>Group by</Label>
+            <select
+              value={grouping}
+              onChange={(e) => setGrouping(e.target.value as GroupPeriod)}
+              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
           </div>
+          <div className="space-y-1.5">
+            <Label>Format</Label>
+            <div className="flex w-fit rounded-pill bg-surface-strong p-1">
+              {(["csv", "pdf"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFormat(f)}
+                  className={cn(
+                    "rounded-pill px-4 py-1.5 text-sm font-medium uppercase transition-colors",
+                    format === f ? "bg-canvas text-ink shadow-sm" : "text-body"
+                  )}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button type="button" onClick={() => window.open(downloadUrl, "_blank")}>
+            Download {format.toUpperCase()}
+          </Button>
         </div>
-        <div className="space-y-1.5">
-          <Label>Group by</Label>
-          <select
-            value={grouping}
-            onChange={(e) => setGrouping(e.target.value as GroupPeriod)}
-            className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm"
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Format</Label>
-          <div className="flex w-fit rounded-pill bg-surface-strong p-1">
-            {(["csv", "pdf"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFormat(f)}
-                className={cn(
-                  "rounded-pill px-4 py-1.5 text-sm font-medium uppercase transition-colors",
-                  format === f ? "bg-canvas text-ink shadow-sm" : "text-body"
-                )}
-              >
-                {f}
-              </button>
+
+        <div className="rounded-2xl border border-hairline p-4 sm:p-6">
+          <h2 className="text-sm font-semibold text-ink">Preview</h2>
+          <div className="mt-4 max-h-80 space-y-3 overflow-y-auto">
+            {groups.length === 0 && (
+              <p className="text-sm text-muted">No transactions in this range.</p>
+            )}
+            {groups.map((g) => (
+              <div key={g.key} className="flex items-center justify-between text-sm min-w-0 gap-3">
+                <span className="text-body truncate flex-1">{g.label}</span>
+                <span className="font-mono text-ink shrink-0">{formatPeso(Math.abs(g.netTotal))}</span>
+              </div>
             ))}
           </div>
         </div>
-        <Button type="button" onClick={() => window.open(downloadUrl, "_blank")}>
-          Download {format.toUpperCase()}
-        </Button>
       </div>
 
-      <div className="rounded-2xl border border-hairline p-4 sm:p-6">
-        <h2 className="text-sm font-semibold text-ink">Preview</h2>
-        <div className="mt-4 max-h-80 space-y-3 overflow-y-auto">
-          {groups.length === 0 && (
-            <p className="text-sm text-muted">No transactions in this range.</p>
-          )}
-          {groups.map((g) => (
-            <div key={g.key} className="flex items-center justify-between text-sm min-w-0 gap-3">
-              <span className="text-body truncate flex-1">{g.label}</span>
-              <span className="font-mono text-ink shrink-0">{formatPeso(Math.abs(g.netTotal))}</span>
-            </div>
-          ))}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-ink">Send vs. Receive</h2>
+          <SendReceiveChart data={trend} />
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-ink">By category</h2>
+          <CategoryBreakdownChart data={categoryTotals} />
         </div>
       </div>
     </div>
