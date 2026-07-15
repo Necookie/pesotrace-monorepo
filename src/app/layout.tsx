@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
@@ -8,11 +8,6 @@ import { ClerkProvider } from "@clerk/nextjs";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin", "latin-ext"],
 });
 
 export const metadata: Metadata = {
@@ -29,7 +24,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={cn("h-full", "antialiased", inter.variable, jetbrainsMono.variable)}
+        className={cn("h-full", "antialiased", inter.variable)}
       >
         <body className="min-h-full flex flex-col bg-canvas text-ink">
           <Providers>{children}</Providers>
