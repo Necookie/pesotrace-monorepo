@@ -107,9 +107,19 @@ export function TransactionDetailSheet() {
               <span className="text-ink">{formatDateTime(row.occurred_at)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
+              <span className="text-muted">Charge / Service fee</span>
+              <span className="font-mono text-ink">₱{row.fee_computed}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Status</span>
               <StatusBadge status={row.status} />
             </div>
+            {row.notes && (
+              <div className="text-sm">
+                <span className="text-muted">Comment</span>
+                <p className="mt-1 rounded-xl bg-surface-soft p-3 text-ink">{row.notes}</p>
+              </div>
+            )}
             {row.status === "needs_review" && (
               <Button onClick={handleConfirm} className="w-full">
                 Confirm
