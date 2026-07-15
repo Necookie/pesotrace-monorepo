@@ -42,7 +42,7 @@ export function FeeTierTable({ initial }: { initial: FeeTierConfig }) {
 
       <div className="mt-4 space-y-3">
         {tiers.map((tier, i) => (
-          <div key={i} className="grid grid-cols-4 items-center gap-2">
+          <div key={i} className="grid grid-cols-2 items-center gap-2 sm:grid-cols-4">
             <Input
               type="number"
               value={tier.min}
