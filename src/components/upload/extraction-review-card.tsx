@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { extractedTransactionSchema, type ExtractedTransaction } from "@/lib/schemas/transaction";
+import type { ExtractionCost } from "@/lib/gemini/pricing";
+import { formatExtractionCost } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type FormValues = z.input<typeof extractedTransactionSchema>;
@@ -16,6 +18,7 @@ export function ExtractionReviewCard({
   fileName,
   previewUrl,
   extracted,
+  cost,
   submitting,
   onConfirm,
   onSkip,
@@ -23,6 +26,7 @@ export function ExtractionReviewCard({
   fileName: string;
   previewUrl: string;
   extracted: ExtractedTransaction;
+  cost?: ExtractionCost;
   submitting: boolean;
   onConfirm: (values: ExtractedTransaction) => void;
   onSkip: () => void;
@@ -49,15 +53,22 @@ export function ExtractionReviewCard({
           className="w-full rounded-xl border border-hairline object-contain"
         />
         <p className="mt-2 truncate text-xs text-muted">{fileName}</p>
-        <span
-          className={cn(
-            "mt-2 inline-block rounded-pill px-2.5 py-1 text-xs font-medium",
-            needsReview ? "bg-surface-strong text-down" : "bg-surface-strong text-up"
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              "inline-block rounded-pill px-2.5 py-1 text-xs font-medium",
+              needsReview ? "bg-surface-strong text-down" : "bg-surface-strong text-up"
+            )}
+          >
+            {needsReview ? "Needs review" : "High confidence"} (
+            {Math.round(extracted.confidence * 100)}%)
+          </span>
+          {cost && (
+            <span className="inline-block rounded-pill bg-surface-strong px-2.5 py-1 font-mono text-xs text-muted">
+              {formatExtractionCost(cost.costUsd)} · {cost.inputTokens + cost.outputTokens} tokens
+            </span>
           )}
-        >
-          {needsReview ? "Needs review" : "High confidence"} (
-          {Math.round(extracted.confidence * 100)}%)
-        </span>
+        </div>
       </div>
 
       <form

@@ -59,7 +59,11 @@ export async function POST(request: Request) {
 
   if (!extractionResult.ok) {
     return NextResponse.json(
-      { error: extractionResult.error, source_file_url: objectPath },
+      {
+        error: extractionResult.error,
+        source_file_url: objectPath,
+        cost: extractionResult.cost,
+      },
       { status: 422 }
     );
   }
@@ -67,5 +71,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     extracted: extractionResult.data,
     source_file_url: objectPath,
+    cost: extractionResult.cost,
   });
 }

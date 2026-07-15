@@ -17,6 +17,13 @@ export function formatDateTime(iso: string): string {
   }).format(d);
 }
 
+/** Sub-cent USD costs need more precision than Intl.NumberFormat's currency mode allows. */
+export function formatExtractionCost(usd: number): string {
+  if (usd === 0) return "$0.00";
+  if (usd < 0.01) return `$${usd.toFixed(5)}`;
+  return `$${usd.toFixed(4)}`;
+}
+
 export function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;

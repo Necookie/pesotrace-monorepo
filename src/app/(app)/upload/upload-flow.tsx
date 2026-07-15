@@ -6,6 +6,8 @@ import { Dropzone } from "@/components/upload/dropzone";
 import { ExtractionReviewCard } from "@/components/upload/extraction-review-card";
 import { cn } from "@/lib/utils";
 import type { ExtractedTransaction } from "@/lib/schemas/transaction";
+import type { ExtractionCost } from "@/lib/gemini/pricing";
+import { formatExtractionCost } from "@/lib/format";
 import { confirmTransaction } from "./actions";
 
 type UploadTab = "single" | "bulk" | "statement";
@@ -18,21 +20,27 @@ type QueueItem = {
   extracted?: ExtractedTransaction;
   sourceFileUrl?: string;
   error?: string;
+  cost?: ExtractionCost;
 };
 
 async function extractOne(file: File): Promise<{
   extracted?: ExtractedTransaction;
   sourceFileUrl?: string;
   error?: string;
+  cost?: ExtractionCost;
 }> {
   const formData = new FormData();
   formData.append("file", file);
   const res = await fetch("/api/extract", { method: "POST", body: formData });
   const body = await res.json();
   if (!res.ok) {
-    return { error: body.error ?? "Extraction failed", sourceFileUrl: body.source_file_url };
+    return {
+      error: body.error ?? "Extraction failed",
+      sourceFileUrl: body.source_file_url,
+      cost: body.cost,
+    };
   }
-  return { extracted: body.extracted, sourceFileUrl: body.source_file_url };
+  return { extracted: body.extracted, sourceFileUrl: body.source_file_url, cost: body.cost };
 }
 
 export function UploadFlow() {
@@ -60,6 +68,7 @@ export function UploadFlow() {
                 extracted: result.extracted,
                 sourceFileUrl: result.sourceFileUrl,
                 error: result.error,
+                cost: result.cost,
               }
             : q
         )
@@ -92,10 +101,19 @@ export function UploadFlow() {
   const pendingReview = queue.filter((q) => q.status === "ready");
   const extracting = queue.filter((q) => q.status === "extracting");
   const errors = queue.filter((q) => q.status === "error");
+  const batchCostUsd = queue.reduce((sum, q) => sum + (q.cost?.costUsd ?? 0), 0);
+  const processedCount = queue.filter((q) => q.cost).length;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <h1 className="text-2xl font-medium text-ink">Upload Transactions</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-medium text-ink">Upload Transactions</h1>
+        {processedCount > 0 && (
+          <span className="rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-mono text-muted">
+            {processedCount} image{processedCount > 1 ? "s" : ""} · {formatExtractionCost(batchCostUsd)} this batch
+          </span>
+        )}
+      </div>
 
       <div className="flex w-fit rounded-pill bg-surface-strong p-1">
         {(
@@ -163,6 +181,7 @@ export function UploadFlow() {
               fileName={item.file.name}
               previewUrl={item.previewUrl}
               extracted={item.extracted!}
+              cost={item.cost}
               submitting={submittingId === item.id}
               onConfirm={(values) => handleConfirm(item, values)}
               onSkip={() => handleSkip(item)}

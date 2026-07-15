@@ -2,6 +2,7 @@ import "server-only";
 import { Type } from "@google/genai";
 import { getGeminiClient, GEMINI_MODEL } from "@/lib/gemini/client";
 import { extractedTransactionSchema, type ExtractedTransaction } from "@/lib/schemas/transaction";
+import { computeExtractionCost, type ExtractionCost } from "@/lib/gemini/pricing";
 
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -29,8 +30,8 @@ const PROMPT =
   "value if any field is blurry, cropped, or ambiguous.";
 
 export type ExtractionResult =
-  | { ok: true; data: ExtractedTransaction }
-  | { ok: false; error: string };
+  | { ok: true; data: ExtractedTransaction; cost: ExtractionCost }
+  | { ok: false; error: string; cost: ExtractionCost };
 
 export async function extractTransactionFromImage(
   imageBytes: Buffer,
@@ -52,15 +53,20 @@ export async function extractTransactionFromImage(
       config: { responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA },
     });
 
+    const cost = computeExtractionCost(res.usageMetadata);
     const raw = JSON.parse(res.text ?? "{}");
     const parsed = extractedTransactionSchema.safeParse(raw);
 
     if (!parsed.success) {
-      return { ok: false, error: "Gemini response did not match the expected shape." };
+      return { ok: false, error: "Gemini response did not match the expected shape.", cost };
     }
 
-    return { ok: true, data: parsed.data };
+    return { ok: true, data: parsed.data, cost };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Extraction failed." };
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Extraction failed.",
+      cost: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+    };
   }
 }
