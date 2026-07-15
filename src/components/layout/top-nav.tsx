@@ -7,6 +7,7 @@ import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { UserMenu } from "./user-menu";
+import { LogoMark } from "@/components/brand/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -31,7 +32,8 @@ export function TopNav({ storeName, email }: { storeName: string; email: string 
         <Menu className="size-5" />
       </button>
 
-      <Link href="/dashboard" className="mr-8 text-lg font-semibold text-ink">
+      <Link href="/dashboard" className="mr-8 flex items-center gap-2 text-lg font-semibold text-ink">
+        <LogoMark size={22} className="text-primary" />
         PesoTrace
       </Link>
 
