@@ -24,14 +24,16 @@ export default async function DashboardPage() {
 
   if (stats.transactionCount === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <h1 className="text-2xl font-medium text-ink">No transactions yet</h1>
-        <p className="max-w-sm text-body">
-          Upload your first GCash screenshot to start tracking transactions.
-        </p>
-        <Link href="/upload" className={buttonVariants()}>
-          Upload your first screenshot
-        </Link>
+      <div className="mx-auto max-w-6xl p-4 sm:p-6">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 rounded-2xl border border-hairline bg-[url('/empty-state-background.jpg')] bg-cover bg-center p-8 text-center">
+          <h1 className="text-2xl font-medium text-ink">No transactions yet</h1>
+          <p className="max-w-sm text-body">
+            Upload your first GCash screenshot to start tracking transactions.
+          </p>
+          <Link href="/upload" className={buttonVariants()}>
+            Upload your first screenshot
+          </Link>
+        </div>
       </div>
     );
   }
