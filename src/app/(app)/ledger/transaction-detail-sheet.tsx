@@ -13,8 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Amount } from "@/components/shared/amount";
 import { StatusBadge } from "@/components/ledger/status-badge";
 import { formatDateTime } from "@/lib/format";
-import { createClient } from "@/lib/supabase/client";
-import { confirmReview } from "./actions";
+import { confirmReview, getTransactionDetail } from "./actions";
 import type { Database } from "@/lib/database.types";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
@@ -30,27 +29,20 @@ export function TransactionDetailSheet() {
   useEffect(() => {
     if (!txnId) {
       setRow(null);
+      setImageUrl(null);
       return;
     }
     setLoading(true);
-    const supabase = createClient();
-    supabase
-      .from("transactions")
-      .select("*")
-      .eq("id", txnId)
-      .single()
-      .then(async ({ data }) => {
-        setRow(data);
-        if (data?.source_file_url) {
-          const { data: signed } = await supabase.storage
-            .from("transaction-sources")
-            .createSignedUrl(data.source_file_url, 60 * 5);
-          setImageUrl(signed?.signedUrl ?? null);
-        } else {
-          setImageUrl(null);
-        }
-        setLoading(false);
-      });
+    getTransactionDetail(txnId).then((res) => {
+      if (res) {
+        setRow(res.transaction);
+        setImageUrl(res.signedUrl);
+      } else {
+        setRow(null);
+        setImageUrl(null);
+      }
+      setLoading(false);
+    });
   }, [txnId]);
 
   function close() {

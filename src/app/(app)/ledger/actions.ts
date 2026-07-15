@@ -21,3 +21,28 @@ export async function confirmReview(transactionId: string) {
   revalidatePath("/dashboard");
   return { ok: true as const };
 }
+
+export async function getTransactionDetail(transactionId: string) {
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return null;
+
+  const { data: transaction } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("id", transactionId)
+    .eq("store_id", storeId)
+    .single();
+
+  if (!transaction) return null;
+
+  let signedUrl: string | null = null;
+  if (transaction.source_file_url) {
+    const { data: signed } = await supabase.storage
+      .from("transaction-sources")
+      .createSignedUrl(transaction.source_file_url, 300);
+    signedUrl = signed?.signedUrl ?? null;
+  }
+
+  return { transaction, signedUrl };
+}
