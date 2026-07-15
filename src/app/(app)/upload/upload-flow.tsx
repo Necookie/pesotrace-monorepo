@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Dropzone } from "@/components/upload/dropzone";
-import { ExtractionReviewCard } from "@/components/upload/extraction-review-card";
+import { ExtractionReviewCard, type ReviewFormValues } from "@/components/upload/extraction-review-card";
 import { StatementImport } from "@/components/upload/statement-import";
 import { cn } from "@/lib/utils";
 import type { ExtractedTransaction } from "@/lib/schemas/transaction";
 import type { ExtractionCost } from "@/lib/gemini/pricing";
+import type { FeeTierConfig } from "@/lib/schemas/fee-tier";
 import { formatExtractionCost } from "@/lib/format";
 import { confirmTransaction } from "./actions";
 
@@ -44,7 +45,7 @@ async function extractOne(file: File): Promise<{
   return { extracted: body.extracted, sourceFileUrl: body.source_file_url, cost: body.cost };
 }
 
-export function UploadFlow() {
+export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [tab, setTab] = useState<UploadTab>("single");
@@ -77,7 +78,7 @@ export function UploadFlow() {
     }
   }
 
-  async function handleConfirm(item: QueueItem, values: ExtractedTransaction) {
+  async function handleConfirm(item: QueueItem, values: ReviewFormValues) {
     setSubmittingId(item.id);
     const result = await confirmTransaction({
       ...values,
@@ -182,6 +183,7 @@ export function UploadFlow() {
               previewUrl={item.previewUrl}
               extracted={item.extracted!}
               cost={item.cost}
+              feeTierConfig={feeTierConfig}
               submitting={submittingId === item.id}
               onConfirm={(values) => handleConfirm(item, values)}
               onSkip={() => handleSkip(item)}

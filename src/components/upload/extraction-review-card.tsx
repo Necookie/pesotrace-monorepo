@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { z } from "zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,17 +12,26 @@ import {
   CATEGORY_LABELS,
   type ExtractedTransaction,
 } from "@/lib/schemas/transaction";
+import type { FeeTierConfig } from "@/lib/schemas/fee-tier";
+import { computeFee, matchTier, describeTier } from "@/lib/fees";
 import type { ExtractionCost } from "@/lib/gemini/pricing";
 import { formatExtractionCost } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type FormValues = z.input<typeof extractedTransactionSchema>;
+const reviewFormSchema = extractedTransactionSchema.extend({
+  fee: z.coerce.number().min(0, "Fee can't be negative"),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+export type ReviewFormValues = ExtractedTransaction & { fee: number; notes: string | null };
+type FormValues = z.input<typeof reviewFormSchema>;
 
 export function ExtractionReviewCard({
   fileName,
   previewUrl,
   extracted,
   cost,
+  feeTierConfig,
   submitting,
   onConfirm,
   onSkip,
@@ -31,21 +40,39 @@ export function ExtractionReviewCard({
   previewUrl: string;
   extracted: ExtractedTransaction;
   cost?: ExtractionCost;
+  feeTierConfig: FeeTierConfig;
   submitting: boolean;
-  onConfirm: (values: ExtractedTransaction) => void;
+  onConfirm: (values: ReviewFormValues) => void;
   onSkip: () => void;
 }) {
+  const suggestedFee = computeFee(extracted.amount, feeTierConfig);
+  const [feeTouched, setFeeTouched] = useState(false);
+
   const form = useForm<FormValues>({
-    resolver: zodResolver(extractedTransactionSchema) as Resolver<FormValues>,
-    defaultValues: extracted,
+    resolver: zodResolver(reviewFormSchema) as Resolver<FormValues>,
+    defaultValues: { ...extracted, fee: suggestedFee, notes: "" },
   });
 
+  const watchedAmount = form.watch("amount");
+  const watchedFee = form.watch("fee");
+
   useEffect(() => {
-    form.reset(extracted);
+    form.reset({ ...extracted, fee: computeFee(extracted.amount, feeTierConfig) });
+    setFeeTouched(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extracted]);
 
+  useEffect(() => {
+    if (feeTouched) return;
+    const amount = Number(watchedAmount) || 0;
+    form.setValue("fee", computeFee(amount, feeTierConfig));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedAmount, feeTouched]);
+
   const needsReview = extracted.confidence < 0.85;
+  const matchedTier = matchTier(Number(watchedAmount) || 0, feeTierConfig);
+  const currentFeeMatchesSuggestion =
+    Number(watchedFee) === computeFee(Number(watchedAmount) || 0, feeTierConfig);
 
   return (
     <div className="grid grid-cols-1 gap-6 rounded-2xl border border-hairline p-6 md:grid-cols-2">
@@ -76,9 +103,10 @@ export function ExtractionReviewCard({
       </div>
 
       <form
-        onSubmit={form.handleSubmit((values) =>
-          onConfirm(extractedTransactionSchema.parse(values))
-        )}
+        onSubmit={form.handleSubmit((values) => {
+          const parsed = reviewFormSchema.parse(values) as ReviewFormValues;
+          onConfirm({ ...parsed, notes: parsed.notes?.trim() || null });
+        })}
         className="flex flex-col gap-3"
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -127,6 +155,47 @@ export function ExtractionReviewCard({
         <div className="space-y-1.5">
           <Label>Date &amp; time</Label>
           <Input type="datetime-local" {...form.register("occurred_at")} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Charge / Service fee</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              step="0.01"
+              className="font-mono"
+              {...form.register("fee", {
+                onChange: () => setFeeTouched(true),
+              })}
+            />
+            {!currentFeeMatchesSuggestion && (
+              <button
+                type="button"
+                onClick={() => {
+                  form.setValue("fee", computeFee(Number(watchedAmount) || 0, feeTierConfig));
+                  setFeeTouched(false);
+                }}
+                className="shrink-0 rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-medium text-ink"
+              >
+                Use suggested
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted">
+            {matchedTier
+              ? `Suggested from your fee tiers: ${describeTier(matchedTier)}`
+              : "No matching fee tier — enter the charge manually."}
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Comment (optional)</Label>
+          <textarea
+            {...form.register("notes")}
+            rows={2}
+            placeholder="e.g. special rate for regular customer"
+            className="w-full rounded-md border border-hairline bg-canvas px-3 py-2 text-sm"
+          />
         </div>
 
         <div className="mt-2 flex gap-2">

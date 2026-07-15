@@ -1,4 +1,18 @@
-import type { FeeTierConfig } from "@/lib/schemas/fee-tier";
+import type { FeeTierConfig, FeeTier } from "@/lib/schemas/fee-tier";
+
+/** Finds the tier that would apply to `amount`, for display purposes. */
+export function matchTier(amount: number, feeTierConfig: FeeTierConfig): FeeTier | undefined {
+  return (
+    feeTierConfig.find((t) => amount >= t.min && (t.max === null || amount < t.max)) ??
+    feeTierConfig[0]
+  );
+}
+
+export function describeTier(tier: FeeTier): string {
+  const range = tier.max === null ? `₱${tier.min}+` : `₱${tier.min}–${tier.max}`;
+  const rate = tier.type === "flat" ? `₱${tier.fee} flat` : `₱${tier.fee} / ₱1,000`;
+  return `${range} → ${rate}`;
+}
 
 /**
  * Computes the remittance fee for a given amount against a store's tier
