@@ -5,6 +5,7 @@ import { getDashboardStats } from "@/lib/queries/dashboard";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { SendReceiveChart } from "@/components/charts/send-receive-chart";
 import { PieBreakdownChart } from "@/components/charts/pie-breakdown-chart";
+import { FeeTrendChart } from "@/components/charts/fee-trend-chart";
 import { TopCounterparties } from "@/components/dashboard/top-counterparties";
 import { buttonVariants } from "@/components/ui/button";
 import { formatPeso } from "@/lib/format";
@@ -53,10 +54,26 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <KpiTile label="Volume (30d)" value={formatPeso(stats.totalVolume)} />
-        <KpiTile label="Transactions" value={String(stats.transactionCount)} />
-        <KpiTile label="Total Income" value={formatPeso(stats.feesEarned)} />
-        <KpiTile label="Avg. Size" value={formatPeso(stats.avgSize)} />
+        <KpiTile
+          label="Volume (30d)"
+          value={formatPeso(stats.totalVolume)}
+          deltaPct={stats.deltas.totalVolume.pct}
+        />
+        <KpiTile
+          label="Transactions"
+          value={String(stats.transactionCount)}
+          deltaPct={stats.deltas.transactionCount.pct}
+        />
+        <KpiTile
+          label="Total Income"
+          value={formatPeso(stats.feesEarned)}
+          deltaPct={stats.deltas.feesEarned.pct}
+        />
+        <KpiTile
+          label="Avg. Size"
+          value={formatPeso(stats.avgSize)}
+          deltaPct={stats.deltas.avgSize.pct}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -65,6 +82,11 @@ export default async function DashboardPage() {
           <SendReceiveChart data={stats.trend} />
         </div>
         <TopCounterparties items={stats.topCounterparties} />
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-ink">Income trend</h2>
+        <FeeTrendChart data={stats.feeTrend} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
