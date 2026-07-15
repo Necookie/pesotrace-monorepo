@@ -11,7 +11,7 @@ const VALUE_PROPS = [
 export default function SignUpPage() {
   return (
     <div className="flex min-h-screen">
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center bg-surface-soft px-16">
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center bg-surface-soft bg-[url('/auth-background.jpg')] bg-cover bg-center px-16">
         <Logo />
         <ul className="mt-8 space-y-4">
           {VALUE_PROPS.map((prop) => (
