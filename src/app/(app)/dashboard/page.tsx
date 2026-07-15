@@ -82,7 +82,7 @@ export default async function DashboardPage() {
           <h2 className="mb-3 text-sm font-semibold text-ink">Review status</h2>
           <PieBreakdownChart
             centerLabel="transactions"
-            valueFormatter={(v) => String(v)}
+            format="count"
             data={[
               { key: "confirmed", label: "Confirmed", value: stats.statusBreakdown.confirmed, color: "var(--color-up)" },
               { key: "needs_review", label: "Needs review", value: stats.statusBreakdown.needsReview, color: "var(--color-chart-bills)" },

@@ -4,15 +4,20 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { formatPeso } from "@/lib/format";
 
 export type PieSlice = { key: string; label: string; value: number; color: string };
+export type PieValueFormat = "peso" | "count";
+
+function formatValue(v: number, format: PieValueFormat): string {
+  return format === "count" ? String(v) : formatPeso(v);
+}
 
 function ChartTooltip({
   active,
   payload,
-  valueFormatter,
+  format,
 }: {
   active?: boolean;
   payload?: { payload: PieSlice }[];
-  valueFormatter: (v: number) => string;
+  format: PieValueFormat;
 }) {
   if (!active || !payload || payload.length === 0) return null;
   const slice = payload[0].payload;
@@ -22,7 +27,7 @@ function ChartTooltip({
       <div className="flex items-center gap-2 text-xs">
         <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: slice.color }} />
         <span className="text-ink">{slice.label}</span>
-        <span className="ml-auto font-mono font-medium text-ink">{valueFormatter(slice.value)}</span>
+        <span className="ml-auto font-mono font-medium text-ink">{formatValue(slice.value, format)}</span>
       </div>
     </div>
   );
@@ -31,11 +36,11 @@ function ChartTooltip({
 export function PieBreakdownChart({
   data,
   centerLabel,
-  valueFormatter = formatPeso,
+  format = "peso",
 }: {
   data: PieSlice[];
   centerLabel?: string;
-  valueFormatter?: (v: number) => string;
+  format?: PieValueFormat;
 }) {
   const slices = data.filter((d) => d.value > 0);
   const total = slices.reduce((sum, d) => sum + d.value, 0);
@@ -68,11 +73,11 @@ export function PieBreakdownChart({
                 <Cell key={d.key} fill={d.color} />
               ))}
             </Pie>
-            <Tooltip content={<ChartTooltip valueFormatter={valueFormatter} />} />
+            <Tooltip content={<ChartTooltip format={format} />} />
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-mono text-lg font-semibold text-ink">{valueFormatter(total)}</span>
+          <span className="font-mono text-lg font-semibold text-ink">{formatValue(total, format)}</span>
           {centerLabel && <span className="text-xs text-muted">{centerLabel}</span>}
         </div>
       </div>
