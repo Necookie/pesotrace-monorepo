@@ -14,6 +14,7 @@ export type DashboardStats = {
   topCounterparties: { name: string; amount: number }[];
   trend: { label: string; send: number; receive: number }[];
   categoryTotals: { category: TransactionCategory; label: string; amount: number }[];
+  statusBreakdown: { confirmed: number; needsReview: number };
 };
 
 function dayKey(iso: string) {
@@ -74,6 +75,11 @@ export const getDashboardStats = cache(async function getDashboardStats(
     })
   );
 
+  const statusBreakdown = {
+    confirmed: rows.length - needsReviewCount,
+    needsReview: needsReviewCount,
+  };
+
   return {
     totalVolume,
     transactionCount: rows.length,
@@ -83,5 +89,6 @@ export const getDashboardStats = cache(async function getDashboardStats(
     topCounterparties,
     trend,
     categoryTotals,
+    statusBreakdown,
   };
 });
