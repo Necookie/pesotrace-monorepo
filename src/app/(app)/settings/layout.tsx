@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const NAV = [
   { href: "/settings/fee-tiers", label: "Fee tiers" },
+  { href: "/settings/phone-numbers", label: "Phone numbers" },
   { href: "/settings/branches", label: "Branches" },
 ];
 
