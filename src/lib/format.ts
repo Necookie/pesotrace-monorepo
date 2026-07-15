@@ -24,6 +24,14 @@ export function formatExtractionCost(usd: number): string {
   return `$${usd.toFixed(4)}`;
 }
 
+/** Compact axis-tick form: ₱1.2K / ₱3.4M instead of the full ₱1,234.00. */
+export function formatPesoCompact(amount: number): string {
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000) return `₱${(amount / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `₱${(amount / 1_000).toFixed(1)}K`;
+  return `₱${amount.toFixed(0)}`;
+}
+
 export function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
