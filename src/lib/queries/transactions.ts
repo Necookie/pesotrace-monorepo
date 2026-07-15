@@ -27,8 +27,13 @@ export async function listTransactions(
   if (filters.from) query = query.gte("occurred_at", filters.from);
   if (filters.to) query = query.lte("occurred_at", filters.to);
   if (filters.search) {
+    // PostgREST's or() filter syntax treats ",()" as structural — a raw search
+    // term containing them (e.g. "dela Cruz, Juan") would corrupt the filter
+    // or let it bleed into an unintended clause. Escape wildcards + structural
+    // chars per PostgREST's own escaping rules before interpolating.
+    const escaped = filters.search.replace(/[%,()]/g, (c) => `\\${c}`);
     query = query.or(
-      `ref_number.ilike.%${filters.search}%,counterparty_name.ilike.%${filters.search}%,counterparty_number.ilike.%${filters.search}%`
+      `ref_number.ilike.%${escaped}%,counterparty_name.ilike.%${escaped}%,counterparty_number.ilike.%${escaped}%`
     );
   }
 
