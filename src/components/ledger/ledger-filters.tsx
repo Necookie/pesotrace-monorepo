@@ -24,7 +24,7 @@ export function LedgerFilters() {
   const category = searchParams.get("category");
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3">
+    <div className="mb-5 flex flex-col gap-3">
       <Input
         placeholder="Search transactions..."
         value={search}
@@ -32,50 +32,52 @@ export function LedgerFilters() {
         onKeyDown={(e) => e.key === "Enter" && updateParam("search", search || null)}
         className="w-full sm:max-w-xs"
       />
-      <div className="flex gap-1">
-        {["send", "receive"].map((d) => (
-          <button
-            key={d}
-            onClick={() => updateParam("direction", direction === d ? null : d)}
-            className={cn(
-              "rounded-pill px-3 py-1.5 text-sm font-medium capitalize",
-              direction === d ? "bg-surface-strong text-primary" : "text-body"
-            )}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => updateParam("category", category === value ? null : value)}
-            className={cn(
-              "rounded-pill px-3 py-1.5 text-sm font-medium",
-              category === value ? "bg-surface-strong text-primary" : "text-body"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-1">
-        {[
-          { value: "needs_review", label: "Needs review" },
-          { value: "confirmed", label: "Confirmed" },
-        ].map((s) => (
-          <button
-            key={s.value}
-            onClick={() => updateParam("status", status === s.value ? null : s.value)}
-            className={cn(
-              "rounded-pill px-3 py-1.5 text-sm font-medium",
-              status === s.value ? "bg-surface-strong text-primary" : "text-body"
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-1 rounded-pill border border-hairline p-1">
+          {["send", "receive"].map((d) => (
+            <button
+              key={d}
+              onClick={() => updateParam("direction", direction === d ? null : d)}
+              className={cn(
+                "rounded-pill px-3 py-1.5 text-sm font-medium capitalize",
+                direction === d ? "bg-surface-strong text-primary" : "text-body"
+              )}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1 rounded-2xl border border-hairline p-1">
+          {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => updateParam("category", category === value ? null : value)}
+              className={cn(
+                "rounded-pill px-3 py-1.5 text-sm font-medium",
+                category === value ? "bg-surface-strong text-primary" : "text-body"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 rounded-pill border border-hairline p-1">
+          {[
+            { value: "needs_review", label: "Needs review" },
+            { value: "confirmed", label: "Confirmed" },
+          ].map((s) => (
+            <button
+              key={s.value}
+              onClick={() => updateParam("status", status === s.value ? null : s.value)}
+              className={cn(
+                "rounded-pill px-3 py-1.5 text-sm font-medium",
+                status === s.value ? "bg-surface-strong text-primary" : "text-body"
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
