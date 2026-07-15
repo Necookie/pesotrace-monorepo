@@ -1,6 +1,7 @@
 import { cache } from "react";
-import type { Database } from "@/lib/database.types";
+import type { Database, TransactionCategory } from "@/lib/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -12,6 +13,7 @@ export type DashboardStats = {
   needsReviewCount: number;
   topCounterparties: { name: string; amount: number }[];
   trend: { label: string; send: number; receive: number }[];
+  categoryTotals: { category: TransactionCategory; label: string; amount: number }[];
 };
 
 function dayKey(iso: string) {
@@ -60,6 +62,18 @@ export const getDashboardStats = cache(async function getDashboardStats(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([label, v]) => ({ label, ...v }));
 
+  const categoryAmounts = new Map<TransactionCategory, number>();
+  for (const r of rows) {
+    categoryAmounts.set(r.category, (categoryAmounts.get(r.category) ?? 0) + Number(r.amount));
+  }
+  const categoryTotals = (Object.keys(CATEGORY_LABELS) as TransactionCategory[]).map(
+    (category) => ({
+      category,
+      label: CATEGORY_LABELS[category],
+      amount: categoryAmounts.get(category) ?? 0,
+    })
+  );
+
   return {
     totalVolume,
     transactionCount: rows.length,
@@ -68,5 +82,6 @@ export const getDashboardStats = cache(async function getDashboardStats(
     needsReviewCount,
     topCounterparties,
     trend,
+    categoryTotals,
   };
 });
