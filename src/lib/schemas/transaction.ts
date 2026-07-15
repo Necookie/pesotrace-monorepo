@@ -47,12 +47,18 @@ export const transactionStatusSchema = z.enum(["needs_review", "confirmed"]);
 
 /**
  * What the client actually submits to the confirm server action. Server-only
- * fields (store_id, created_by, fee_computed, status) are filled in server-side
- * and never trusted from the client.
+ * fields (store_id, created_by, status) are filled in server-side and never
+ * trusted from the client. `fee` is optional: the client can send a fee it
+ * picked from the store's configured tiers or typed in manually — the server
+ * still validates it (non-negative, finite) and falls back to computing it
+ * from the tier config when omitted, but it is never silently overridden
+ * once the user has made a choice.
  */
 export const transactionConfirmInputSchema = extractedTransactionSchema.extend({
   source_type: transactionSourceSchema,
   source_file_url: z.string().nullable().optional(),
+  fee: z.coerce.number().min(0).finite().optional(),
+  notes: z.string().max(500).nullable().optional(),
 });
 
 export type TransactionConfirmInput = z.infer<typeof transactionConfirmInputSchema>;

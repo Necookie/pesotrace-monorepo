@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractedTransactionSchema, deriveStatus } from "./transaction";
+import { extractedTransactionSchema, transactionConfirmInputSchema, deriveStatus } from "./transaction";
 
 describe("extractedTransactionSchema", () => {
   it("accepts a valid Gemini extraction payload", () => {
@@ -51,6 +51,42 @@ describe("extractedTransactionSchema", () => {
       occurred_at: "2026-07-12T17:58:00",
       confidence: 1,
     });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("transactionConfirmInputSchema", () => {
+  const base = {
+    direction: "send" as const,
+    category: "other" as const,
+    amount: 100,
+    ref_number: "ref1",
+    occurred_at: "2026-07-12T17:58:00",
+    confidence: 1,
+    source_type: "screenshot" as const,
+  };
+
+  it("allows omitting fee — server computes it from tiers", () => {
+    const result = transactionConfirmInputSchema.safeParse(base);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.fee).toBeUndefined();
+  });
+
+  it("accepts a manually chosen fee and notes", () => {
+    const result = transactionConfirmInputSchema.safeParse({
+      ...base,
+      fee: 25,
+      notes: "Regular customer discount",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.fee).toBe(25);
+      expect(result.data.notes).toBe("Regular customer discount");
+    }
+  });
+
+  it("rejects a negative fee", () => {
+    const result = transactionConfirmInputSchema.safeParse({ ...base, fee: -5 });
     expect(result.success).toBe(false);
   });
 });
