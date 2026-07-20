@@ -10,7 +10,7 @@ import type { ExtractedTransaction } from "@/lib/schemas/transaction";
 import type { ExtractionCost } from "@/lib/gemini/pricing";
 import type { FeeTierConfig } from "@/lib/schemas/fee-tier";
 import { formatExtractionCost } from "@/lib/format";
-import { confirmTransaction } from "./actions";
+import { confirmTransaction, deleteUploadedSource } from "./actions";
 
 type UploadTab = "single" | "bulk" | "statement";
 
@@ -98,6 +98,11 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
 
   function handleSkip(item: QueueItem) {
     setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "done" } : q)));
+    if (item.sourceFileUrl) {
+      // Fire-and-forget: the skipped screenshot has no transaction row
+      // referencing it, so leaving it in storage would just orphan it.
+      deleteUploadedSource(item.sourceFileUrl);
+    }
   }
 
   const pendingReview = queue.filter((q) => q.status === "ready");
