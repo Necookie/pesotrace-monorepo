@@ -8,6 +8,7 @@ const NAV = [
   { href: "/settings/fee-tiers", label: "Fee tiers" },
   { href: "/settings/phone-numbers", label: "Phone numbers" },
   { href: "/settings/branches", label: "Branches" },
+  { href: "/settings/danger-zone", label: "Danger zone" },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       <aside className="flex gap-1 overflow-x-auto sm:w-48 sm:shrink-0 sm:flex-col sm:space-y-1 sm:overflow-visible">
         {NAV.map((item) => {
           const active = pathname === item.href;
+          const danger = item.href === "/settings/danger-zone";
           return (
             <Link
               key={item.href}
@@ -25,8 +27,12 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               className={cn(
                 "block shrink-0 rounded-pill px-3 py-1.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-surface-strong text-primary"
-                  : "text-body hover:bg-surface-strong hover:text-ink"
+                  ? danger
+                    ? "bg-down/10 text-down"
+                    : "bg-surface-strong text-primary"
+                  : danger
+                    ? "text-down/70 hover:bg-down/10 hover:text-down"
+                    : "text-body hover:bg-surface-strong hover:text-ink"
               )}
             >
               {item.label}
