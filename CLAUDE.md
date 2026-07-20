@@ -25,11 +25,14 @@ math, and Zod schemas (see `src/lib/**/*.test.ts`). Server actions, route handle
 dashboard aggregation query (`src/lib/queries/dashboard.ts`) have no tests yet — add them
 alongside new logic there rather than assuming the pattern doesn't apply.
 
-**Deployment target is Cloudflare Workers**, not Vercel/Node, via `@opennextjs/cloudflare` —
-see `docs/CLOUDFLARE_DEPLOY.md` before touching anything deployment-related (route handler
-runtime assumptions, `serverExternalPackages`, adding new Node-only APIs). Notably: there is no
-`proxy.ts`/middleware file (Next 16 forces it onto the Node.js runtime, which the Cloudflare
-adapter rejects) — auth is enforced per-route/per-action instead, not centrally.
+**Cloudflare Workers deployment is blocked, not set up** — see `docs/CLOUDFLARE_DEPLOY.md`
+before touching anything deployment-related. Next 16 forces `proxy.ts` onto the Node.js
+runtime with no opt-out, the Cloudflare adapter (`@opennextjs/cloudflare`) refuses to build
+with Node-runtime middleware, and Clerk's `auth()`/`currentUser()` hard-require
+`clerkMiddleware()` to be registered in that file — so `proxy.ts` can't just be deleted to
+satisfy the adapter (this was tried and broke auth everywhere). The doc lays out the real
+options (downgrade Next, use Cloudflare Containers instead of Workers, rewrite auth to not
+need middleware, or deploy elsewhere) — none has been chosen yet.
 
 ## Project
 

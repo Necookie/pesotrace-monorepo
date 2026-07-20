@@ -1,31 +1,58 @@
 # Deploying to Cloudflare Workers
 
+**Status: blocked on an unresolved conflict — do not attempt to deploy yet.** Read this section
+before touching any of the setup below.
+
 PesoTrace deploys to Cloudflare Workers via [OpenNext for Cloudflare](https://opennext.js.org/cloudflare)
 (`@opennextjs/cloudflare`), which adapts a normal Next.js build into a Workers-compatible
-bundle. This is a different runtime than the Node.js server `.env.example`/Vercel setup was
-originally written for — a few things had to change to make it work, and one thing (PDF export)
-is not yet fully verified. Read this whole doc before your first deploy.
+bundle. Getting there hit a hard, three-way conflict between the framework version, the auth
+provider, and the adapter:
 
-## What changed to make this work
+- **Next.js 16 always runs `proxy.ts` (formerly "Middleware") on the Node.js runtime.** The
+  framework docs are explicit: the `runtime` config option is not available in Proxy files, and
+  setting it throws. There is no way to opt a Next 16 proxy file into the Edge runtime.
+- **OpenNext's Cloudflare adapter refuses to build if it detects Node.js-runtime middleware**
+  (`process.exit(1)` with "Node.js middleware is not currently supported").
+- **Clerk's `auth()` / `currentUser()` hard-require `clerkMiddleware()` to have run** — this was
+  learned the hard way: `src/proxy.ts` was deleted on the (wrong) assumption that it was just a
+  redundant defense-in-depth layer on top of the per-route/per-action auth checks already in the
+  app. It isn't — Clerk's SDK uses the middleware to populate the auth context in the first
+  place, and every `currentUser()`/`auth()` call throws without it
+  (`Clerk: auth() was called but Clerk can't detect usage of clerkMiddleware()`). The file has
+  been restored; the app works locally again.
 
-### `src/proxy.ts` was removed
+Net result: as currently structured (Next 16 + Clerk + `@opennextjs/cloudflare`), there is no
+configuration that satisfies all three at once. One of the three has to change. See "Choosing a
+way forward" below — this needs a decision, not another unilateral workaround.
 
-Next.js 16 always runs `proxy.ts` (formerly "Middleware") on the Node.js runtime — the framework
-docs are explicit that the `runtime` config option can't be set to anything else in a Proxy file,
-it throws if you try. OpenNext's Cloudflare adapter refuses to build with Node.js-runtime
-middleware at all.
+## Choosing a way forward
 
-This is not a partial workaround — it was verified safe to just delete the file, because every
-protected surface in the app already enforces its own auth independently of it:
+Options, roughly in order of how much they disturb the rest of the app:
 
-- `(app)/layout.tsx` calls `currentUser()` and redirects to `/login` if there's no session.
-- Every route handler under `/api/*` checks `auth()` and returns 401 itself.
-- Every server action calls `getCurrentStoreId()`, which internally calls `auth()` and returns
-  `null` for an unauthenticated caller — every action bails out cleanly on a null store id.
+1. **Downgrade Next.js to 15.5.x.** Middleware could still run on the Edge runtime there (Node
+   runtime for middleware was added as an *option* in 15.2–15.5, only made exclusive in 16.0).
+   Keeps Clerk's middleware-based auth exactly as-is and unblocks the Cloudflare adapter. Cost:
+   a real framework downgrade on what's currently a deliberately bleeding-edge stack — some App
+   Router APIs this codebase already uses may differ or need adjustment going back a major
+   version.
+2. **Deploy to Cloudflare via Containers instead of Workers.** Cloudflare's Containers product
+   runs an actual Docker image with a full Node.js runtime (not the V8-isolate Workers
+   sandbox), so Next 16's Node-runtime proxy and Clerk's middleware work completely unmodified —
+   this is much closer to "run `next start` in a container." Still Cloudflare, just a different
+   product than Workers; check current pricing/limits against what you need.
+3. **Replace Clerk's middleware-based auth with manual verification per request** (e.g.
+   `@clerk/backend`'s `authenticateRequest()` called directly in `(app)/layout.tsx`, every API
+   route, and every server action, instead of relying on `clerkMiddleware()`). Keeps Next 16 and
+   Workers. Cost: touches every auth checkpoint in the app (the highest-risk code to get subtly
+   wrong), and it's a pattern Clerk's own docs don't primarily design around for App Router — expect
+   rough edges.
+4. **Deploy somewhere other than Cloudflare Workers** (Vercel, or any normal Node host) where
+   Node-runtime middleware just works, no adapter involved. Everything already set up for
+   Cloudflare (`wrangler.jsonc`, the GitHub Actions workflow) would go unused.
 
-`proxy.ts` was a centralized layer on top of defenses that already exist everywhere else, not
-the only thing enforcing them. If you ever add a new route or action, don't rely on middleware
-to protect it — check auth in the handler/action itself, matching the existing pattern.
+Nothing past this point in the doc has been executed — the R2 bucket, secrets, and GitHub
+Actions workflow are scaffolded but the app cannot actually build for Cloudflare until one of
+the above is chosen and applied.
 
 ### PDF export (`pdfkit`) — unverified, watch this first
 
