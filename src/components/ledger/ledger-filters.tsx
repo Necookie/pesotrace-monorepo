@@ -14,15 +14,19 @@ export function LedgerFilters() {
   const searchParams = useSearchParams();
   const searchFromUrl = searchParams.get("search") ?? "";
   const [search, setSearch] = useState(searchFromUrl);
+  // Tracks the searchFromUrl value `search` was last synced to, so an
+  // external URL change (e.g. the "Clear filters" link) can be detected and
+  // applied during render — React's documented pattern for adjusting state
+  // when a prop changes, without the extra render pass a setState-in-effect
+  // would cost. A plain useState initializer only runs once and would
+  // otherwise leave stale text in the box after such a reset.
+  const [syncedSearchFromUrl, setSyncedSearchFromUrl] = useState(searchFromUrl);
+  if (searchFromUrl !== syncedSearchFromUrl) {
+    setSyncedSearchFromUrl(searchFromUrl);
+    setSearch(searchFromUrl);
+  }
   const [, startTransition] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  // Keep the input in sync when the URL changes from elsewhere (e.g. the
-  // "Clear filters" link) — a plain useState initializer only runs once and
-  // would otherwise leave stale text in the box after an external reset.
-  useEffect(() => {
-    setSearch(searchFromUrl);
-  }, [searchFromUrl]);
 
   function updateParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString());
