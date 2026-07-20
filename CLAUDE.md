@@ -25,14 +25,14 @@ math, and Zod schemas (see `src/lib/**/*.test.ts`). Server actions, route handle
 dashboard aggregation query (`src/lib/queries/dashboard.ts`) have no tests yet — add them
 alongside new logic there rather than assuming the pattern doesn't apply.
 
-**Cloudflare Workers deployment is blocked, not set up** — see `docs/CLOUDFLARE_DEPLOY.md`
-before touching anything deployment-related. Next 16 forces `proxy.ts` onto the Node.js
-runtime with no opt-out, the Cloudflare adapter (`@opennextjs/cloudflare`) refuses to build
-with Node-runtime middleware, and Clerk's `auth()`/`currentUser()` hard-require
-`clerkMiddleware()` to be registered in that file — so `proxy.ts` can't just be deleted to
-satisfy the adapter (this was tried and broke auth everywhere). The doc lays out the real
-options (downgrade Next, use Cloudflare Containers instead of Workers, rewrite auth to not
-need middleware, or deploy elsewhere) — none has been chosen yet.
+**Deployment target is Vercel** (`VERCEL_TOKEN` in `.env.example`). Cloudflare Workers was
+evaluated and ruled out: Next 16 always runs `proxy.ts` on the Node.js runtime with no opt-out,
+Cloudflare's `@opennextjs/cloudflare` adapter refuses to build with Node-runtime middleware, and
+Clerk's `auth()`/`currentUser()` hard-require `clerkMiddleware()` to be registered in that file
+— so there's no way to satisfy all three at once without downgrading Next, switching to
+Cloudflare Containers, or rewriting auth to not need middleware. None of those were worth it;
+`proxy.ts` stays as the normal Clerk middleware file and the app deploys as a standard Next.js
+Node server.
 
 ## Project
 
