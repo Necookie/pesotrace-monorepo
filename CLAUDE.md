@@ -25,6 +25,12 @@ math, and Zod schemas (see `src/lib/**/*.test.ts`). Server actions, route handle
 dashboard aggregation query (`src/lib/queries/dashboard.ts`) have no tests yet — add them
 alongside new logic there rather than assuming the pattern doesn't apply.
 
+**Deployment target is Cloudflare Workers**, not Vercel/Node, via `@opennextjs/cloudflare` —
+see `docs/CLOUDFLARE_DEPLOY.md` before touching anything deployment-related (route handler
+runtime assumptions, `serverExternalPackages`, adding new Node-only APIs). Notably: there is no
+`proxy.ts`/middleware file (Next 16 forces it onto the Node.js runtime, which the Cloudflare
+adapter rejects) — auth is enforced per-route/per-action instead, not centrally.
+
 ## Project
 
 PesoTrace — a SaaS dashboard for GCash remittance store owners/staff. Upload GCash transaction
