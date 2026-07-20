@@ -85,17 +85,17 @@ export function ClearHistoryCard({ transactionCount }: { transactionCount: numbe
               </p>
               <div className="mt-2 flex gap-2">
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   render={<a href="/api/export?format=csv" target="_blank" rel="noopener noreferrer" />}
                 >
                   Download CSV
                 </Button>
                 <Button
-                  type="button"
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   render={<a href="/api/export?format=pdf" target="_blank" rel="noopener noreferrer" />}
                 >
                   Download PDF
