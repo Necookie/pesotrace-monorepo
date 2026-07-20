@@ -4,12 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { extractStatementFromPdf } from "@/lib/gemini/extract-statement";
 import { reconcileStatement } from "@/lib/reconciliation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 import { auth } from "@clerk/nextjs/server";
 
 export const maxDuration = 60;
 
 const MAX_BYTES = 15 * 1024 * 1024;
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 
 export async function POST(request: Request) {
   const { userId } = await auth();
@@ -23,6 +26,14 @@ export async function POST(request: Request) {
   const storeId = await getCurrentStoreId(supabase);
   if (!storeId) {
     return NextResponse.json({ error: "No store found for this user" }, { status: 400 });
+  }
+
+  const rateLimit = checkRateLimit(`extract-statement:${storeId}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many statement imports — please wait a bit before trying again" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rateLimit.retryAfterMs / 1000)) } }
+    );
   }
 
   const formData = await request.formData();
