@@ -1,0 +1,21 @@
+# Local secrets for `npm run cf:preview` / `wrangler dev` (the Cloudflare
+# Workers runtime, as opposed to `npm run dev` which still uses `.env.local`).
+# Copy to `.dev.vars` and fill in — same values as `.env.local`.
+#
+# NEXT_PUBLIC_* vars are inlined at build time by Next itself, so they don't
+# strictly need to be here too, but wrangler dev reads this file for anything
+# read via process.env at runtime (route handlers, server actions).
+
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+GEMINI_API_KEY=
+
+NEXT_PUBLIC_POSTHOG_KEY=
+NEXT_PUBLIC_POSTHOG_HOST=https://us.posthog.com
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up

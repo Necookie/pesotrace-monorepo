@@ -1,0 +1,28 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "pesotrace",
+	"compatibility_date": "2026-07-20",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Self-reference service binding, the service name must match "name" above
+			// see https://opennext.js.org/cloudflare/caching
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "pesotrace"
+		}
+	],
+	"r2_buckets": [
+		// Used for Next's incremental cache (ISR/data cache). Create this bucket
+		// before deploying: `npx wrangler r2 bucket create pesotrace-opennext-cache`
+		// See https://opennext.js.org/cloudflare/caching
+		{
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "pesotrace-opennext-cache"
+		}
+	]
+}
