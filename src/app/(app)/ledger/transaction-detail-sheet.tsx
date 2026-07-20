@@ -24,15 +24,9 @@ export function TransactionDetailSheet() {
   const txnId = searchParams.get("txn");
   const [row, setRow] = useState<Row | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!txnId) {
-      setRow(null);
-      setImageUrl(null);
-      return;
-    }
-    setLoading(true);
+    if (!txnId) return;
     getTransactionDetail(txnId).then((res) => {
       if (res) {
         setRow(res.transaction);
@@ -41,9 +35,16 @@ export function TransactionDetailSheet() {
         setRow(null);
         setImageUrl(null);
       }
-      setLoading(false);
     });
   }, [txnId]);
+
+  // Derive rather than reset-on-close: gating on a stale row's id matching
+  // the current txnId (instead of clearing row/imageUrl in the effect above)
+  // also avoids briefly rendering the previous transaction's detail
+  // underneath the loading state when switching between two open rows.
+  const displayRow = row?.id === txnId ? row : null;
+  const displayImageUrl = row?.id === txnId ? imageUrl : null;
+  const loading = !!txnId && !displayRow;
 
   function close() {
     const params = new URLSearchParams(searchParams.toString());
@@ -52,14 +53,14 @@ export function TransactionDetailSheet() {
   }
 
   async function handleConfirm() {
-    if (!row) return;
-    const result = await confirmReview(row.id);
+    if (!displayRow) return;
+    const result = await confirmReview(displayRow.id);
     if (!result.ok) {
       toast.error(result.error);
       return;
     }
     toast.success("Marked as confirmed");
-    setRow({ ...row, status: "confirmed" });
+    setRow({ ...displayRow, status: "confirmed" });
     router.refresh();
   }
 
@@ -70,49 +71,49 @@ export function TransactionDetailSheet() {
           <SheetTitle>Transaction detail</SheetTitle>
         </SheetHeader>
         {loading && <p className="p-4 text-sm text-muted">Loading...</p>}
-        {row && (
+        {displayRow && (
           <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
-            {imageUrl && (
+            {displayImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={imageUrl}
+                src={displayImageUrl}
                 alt="source screenshot"
                 className="w-full rounded-xl border border-hairline object-contain"
               />
             )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted">Amount</span>
-              <Amount value={Number(row.amount)} direction={row.direction} className="text-lg" />
+              <Amount value={Number(displayRow.amount)} direction={displayRow.direction} className="text-lg" />
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Reference</span>
-              <span className="font-mono text-ink">{row.ref_number}</span>
+              <span className="font-mono text-ink">{displayRow.ref_number}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Counterparty</span>
               <span className="text-ink">
-                {row.counterparty_name || row.counterparty_number || "Unknown"}
+                {displayRow.counterparty_name || displayRow.counterparty_number || "Unknown"}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Date</span>
-              <span className="text-ink">{formatDateTime(row.occurred_at)}</span>
+              <span className="text-ink">{formatDateTime(displayRow.occurred_at)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Charge / Service fee</span>
-              <span className="font-mono text-ink">₱{row.fee_computed}</span>
+              <span className="font-mono text-ink">₱{displayRow.fee_computed}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Status</span>
-              <StatusBadge status={row.status} />
+              <StatusBadge status={displayRow.status} />
             </div>
-            {row.notes && (
+            {displayRow.notes && (
               <div className="text-sm">
                 <span className="text-muted">Comment</span>
-                <p className="mt-1 rounded-xl bg-surface-soft p-3 text-ink">{row.notes}</p>
+                <p className="mt-1 rounded-xl bg-surface-soft p-3 text-ink">{displayRow.notes}</p>
               </div>
             )}
-            {row.status === "needs_review" && (
+            {displayRow.status === "needs_review" && (
               <Button onClick={handleConfirm} className="w-full">
                 Confirm
               </Button>
