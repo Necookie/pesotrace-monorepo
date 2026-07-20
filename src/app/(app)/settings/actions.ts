@@ -77,3 +77,58 @@ export async function updateStorePhoneNumbers(numbers: StorePhoneNumbers) {
   revalidatePath("/settings/phone-numbers");
   return { ok: true as const };
 }
+
+export async function clearTransactionHistory(confirmation: string) {
+  if (confirmation !== "DELETE") {
+    return { ok: false as const, error: "Confirmation text did not match" };
+  }
+
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (myProfile?.role !== "owner") {
+    return { ok: false as const, error: "Only the store owner can clear transaction history" };
+  }
+
+  const { data: rows, error: fetchError } = await supabase
+    .from("transactions")
+    .select("source_file_url")
+    .eq("store_id", storeId);
+
+  if (fetchError) return { ok: false as const, error: fetchError.message };
+
+  const paths = (rows ?? [])
+    .map((row) => row.source_file_url)
+    .filter((path): path is string => Boolean(path));
+
+  if (paths.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from("transaction-sources")
+      .remove(paths);
+    // Storage cleanup failures shouldn't block clearing the ledger rows —
+    // orphaned files are a cheap tradeoff versus stuck history.
+    if (storageError) console.error("Failed to remove transaction source files:", storageError.message);
+  }
+
+  const { error, count } = await supabase
+    .from("transactions")
+    .delete({ count: "exact" })
+    .eq("store_id", storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/ledger");
+  revalidatePath("/dashboard");
+  revalidatePath("/settings/danger-zone");
+  return { ok: true as const, count: count ?? 0 };
+}
