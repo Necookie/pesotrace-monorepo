@@ -14,6 +14,22 @@ import { confirmTransaction, deleteUploadedSource } from "./actions";
 
 type UploadTab = "single" | "bulk" | "statement";
 
+// Caps how many extraction calls run at once during a bulk upload — plain
+// Promise.all over the whole batch would fire dozens of Gemini/Storage
+// requests simultaneously.
+const BULK_EXTRACT_CONCURRENCY = 4;
+
+async function mapWithConcurrency<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const item = items[next++];
+      await fn(item);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
+
 type QueueItem = {
   id: string;
   file: File;
@@ -59,7 +75,7 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
     }));
     setQueue((prev) => [...prev, ...newItems]);
 
-    for (const item of newItems) {
+    await mapWithConcurrency(newItems, BULK_EXTRACT_CONCURRENCY, async (item) => {
       const result = await extractOne(item.file);
       setQueue((prev) =>
         prev.map((q) =>
@@ -75,7 +91,7 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
             : q
         )
       );
-    }
+    });
   }
 
   async function handleConfirm(item: QueueItem, values: ReviewFormValues) {
