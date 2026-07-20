@@ -4,7 +4,11 @@ import { last4Ref } from "@/lib/schemas/transaction";
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
 function escapeCsv(value: string | number | null): string {
-  const str = String(value ?? "");
+  let str = String(value ?? "");
+  // Neutralize formula injection: a leading =, +, -, or @ makes Excel/Sheets
+  // evaluate the cell as a formula when opened. Source data here can come
+  // from OCR of a user-supplied screenshot, so it isn't trustworthy input.
+  if (/^[=+\-@]/.test(str)) str = `'${str}`;
   if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
   return str;
 }
