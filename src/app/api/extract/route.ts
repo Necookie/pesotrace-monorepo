@@ -66,12 +66,11 @@ export async function POST(request: Request) {
   }
 
   if (!extractionResult.ok) {
+    // Nothing will ever reference this upload — a failed extraction never
+    // reaches the review step — so don't leave it orphaned in storage.
+    await supabase.storage.from("transaction-sources").remove([objectPath]);
     return NextResponse.json(
-      {
-        error: extractionResult.error,
-        source_file_url: objectPath,
-        cost: extractionResult.cost,
-      },
+      { error: extractionResult.error, cost: extractionResult.cost },
       { status: 422 }
     );
   }
