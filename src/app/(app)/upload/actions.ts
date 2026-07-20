@@ -73,3 +73,23 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
   revalidatePath("/ledger");
   return { ok: true as const };
 }
+
+export async function deleteUploadedSource(sourceFileUrl: string) {
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  // The upload path is always `${storeId}/...` — refuse to delete anything
+  // outside the caller's own store even though this client is service-role.
+  if (!sourceFileUrl.startsWith(`${storeId}/`)) {
+    return { ok: false as const, error: "Not found" };
+  }
+
+  const { error } = await supabase.storage.from("transaction-sources").remove([sourceFileUrl]);
+  if (error) return { ok: false as const, error: error.message };
+
+  return { ok: true as const };
+}
