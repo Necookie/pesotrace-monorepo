@@ -16,10 +16,14 @@ npm run dev      # start dev server (Turbopack)
 npm run build    # production build — run this before every commit to verify nothing broke
 npm run start    # run the production build
 npm run lint     # eslint
+npm test         # vitest run — unit tests for pure logic (lib/, schemas/)
 ```
 
-There is no test runner configured yet (Vitest is planned per `docs/PROJECT_BRIEF.md` M12 —
-add `vitest` + `vitest.config.ts` when tests are introduced, don't assume it exists).
+Vitest is configured (`npm test` = `vitest run`). Coverage is currently limited to pure
+business logic — fee computation, CSV escaping, statement reconciliation, extraction cost
+math, and Zod schemas (see `src/lib/**/*.test.ts`). Server actions, route handlers, and the
+dashboard aggregation query (`src/lib/queries/dashboard.ts`) have no tests yet — add them
+alongside new logic there rather than assuming the pattern doesn't apply.
 
 ## Project
 
