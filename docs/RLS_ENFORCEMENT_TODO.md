@@ -1,7 +1,10 @@
 # Follow-up: make RLS actually enforce tenant isolation
 
-**Status:** not applied. Requires a Supabase dashboard change first — do that, confirm it,
-then apply the code change below in its own commit.
+**Status:** not applied. Staff invites/roles (multi-user-per-store) landed, so there's now
+real multi-role data to test isolation against — that prerequisite is done. Still blocked on
+the Supabase dashboard step below, which only the project owner can perform. **Do not flip
+`server.ts` until that's confirmed "Connected"** — every query in the app would return zero
+rows, which reads as a total outage, not a permissions error.
 
 ## The problem
 
