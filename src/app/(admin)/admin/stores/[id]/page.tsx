@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
+import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -123,6 +124,8 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
           </Table>
         </div>
       </div>
+
+      <StoreDangerZoneCard storeId={detail.storeId} storeName={detail.storeName} />
     </div>
   );
 }
