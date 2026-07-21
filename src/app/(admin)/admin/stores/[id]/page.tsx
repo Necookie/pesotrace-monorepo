@@ -27,10 +27,21 @@ const ENTRY_TYPE_TEXT_COLOR: Record<string, string> = {
   refund: "text-up",
 };
 
-export default async function AdminStoreDetailPage({ params }: { params: Promise<{ id: string }> }) {
+const LEDGER_PAGE_SIZE = 200;
+
+export default async function AdminStoreDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ ledgerOffset?: string }>;
+}) {
   const { id } = await params;
+  const { ledgerOffset: ledgerOffsetParam } = await searchParams;
+  const ledgerOffset = Math.max(0, Number(ledgerOffsetParam) || 0);
+
   const supabase = createAdminClient();
-  const detail = await getStoreCreditDetail(supabase, id);
+  const detail = await getStoreCreditDetail(supabase, id, ledgerOffset);
 
   if (!detail) notFound();
 
@@ -135,6 +146,16 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
             </TableBody>
           </Table>
         </div>
+        {detail.ledgerHasMore && (
+          <div className="mt-4 flex justify-center">
+            <Link
+              href={`/admin/stores/${detail.storeId}?ledgerOffset=${ledgerOffset + LEDGER_PAGE_SIZE}`}
+              className="rounded-pill border border-hairline px-4 py-2 text-sm font-medium text-body hover:bg-surface-strong hover:text-ink"
+            >
+              Load more
+            </Link>
+          </div>
+        )}
       </div>
 
       <StoreDangerZoneCard storeId={detail.storeId} storeName={detail.storeName} />
