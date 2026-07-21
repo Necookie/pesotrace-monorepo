@@ -8,6 +8,7 @@ import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
+import { RenameStoreForm } from "@/components/admin/rename-store-form";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -43,7 +44,7 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
         <h1 className="mt-2 text-2xl font-medium text-ink">{detail.storeName}</h1>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_2fr]">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-2xl border border-hairline bg-canvas p-6">
           <p className="text-sm text-muted">Credit balance</p>
           <p
@@ -55,8 +56,10 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
             {detail.balance.toLocaleString()}
           </p>
         </div>
-        <AdjustCreditsForm storeId={detail.storeId} />
+        <RenameStoreForm storeId={detail.storeId} currentName={detail.storeName} />
       </div>
+
+      <AdjustCreditsForm storeId={detail.storeId} />
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-ink">Usage trend</h2>
