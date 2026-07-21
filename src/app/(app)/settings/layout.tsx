@@ -8,6 +8,7 @@ const NAV = [
   { href: "/settings/fee-tiers", label: "Fee tiers" },
   { href: "/settings/phone-numbers", label: "Phone numbers" },
   { href: "/settings/branches", label: "Branches" },
+  { href: "/settings/team", label: "Team" },
   { href: "/settings/credits", label: "AI credits" },
   { href: "/settings/danger-zone", label: "Danger zone" },
 ];
