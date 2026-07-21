@@ -36,6 +36,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: credits } = await supabase
+    .from("store_credits")
+    .select("balance")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  if ((credits?.balance ?? 0) <= 0) {
+    return NextResponse.json(
+      { error: "Out of AI credits — request more from your store settings." },
+      { status: 402 }
+    );
+  }
+
   const { data: store } = await supabase
     .from("stores")
     .select("phone_numbers")
