@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { feeTierConfigSchema, type FeeTierConfig } from "@/lib/schemas/fee-tier";
 import { storePhoneNumbersSchema, type StorePhoneNumbers } from "@/lib/schemas/store-phone";
+import { notifyNewTrialRequest } from "@/lib/email/notify-operator";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -102,6 +103,8 @@ export async function requestTrialCredits() {
     .insert({ store_id: storeId, requested_by: userId });
 
   if (error) return { ok: false as const, error: error.message };
+
+  await notifyNewTrialRequest(supabase, storeId);
 
   revalidatePath("/settings/credits");
   return { ok: true as const };
