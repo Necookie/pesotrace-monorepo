@@ -18,6 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <Link href="/admin/audit" className="ml-6 text-sm font-medium text-body hover:text-ink">
           Audit log
         </Link>
+        <Link href="/admin/admins" className="ml-6 text-sm font-medium text-body hover:text-ink">
+          Admins
+        </Link>
         <Link href="/dashboard" className="ml-auto text-sm font-medium text-body hover:text-ink">
           Back to app
         </Link>
