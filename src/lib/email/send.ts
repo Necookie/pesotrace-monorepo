@@ -2,13 +2,12 @@ import "server-only";
 import type { ReactElement } from "react";
 import { Resend } from "resend";
 import { captureException } from "@/lib/monitoring-server";
+import { getEmailConfigError } from "@/lib/email/config";
 
 let client: Resend | null = null;
 
-function getClient(): Resend | null {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return null;
-  if (!client) client = new Resend(key);
+function getClient(): Resend {
+  if (!client) client = new Resend(process.env.RESEND_API_KEY);
   return client;
 }
 
@@ -27,15 +26,11 @@ export type SendEmailResult = { ok: true } | { ok: false; error: string };
  * action that triggered it.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  const from = process.env.EMAIL_FROM;
-  if (!from) {
-    return { ok: false, error: "EMAIL_FROM is not configured" };
-  }
+  const configError = getEmailConfigError();
+  if (configError) return { ok: false, error: configError };
 
+  const from = process.env.EMAIL_FROM!;
   const resend = getClient();
-  if (!resend) {
-    return { ok: false, error: "RESEND_API_KEY is not configured" };
-  }
 
   try {
     const result = await resend.emails.send({
