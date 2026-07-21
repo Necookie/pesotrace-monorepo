@@ -76,8 +76,14 @@ export async function updateStoreName(input: { storeId: string; name: string }) 
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
-  await requirePlatformAdmin();
+  const adminUserId = await requirePlatformAdmin();
   const supabase = createAdminClient();
+
+  const { data: previous } = await supabase
+    .from("stores")
+    .select("name")
+    .eq("id", parsed.data.storeId)
+    .maybeSingle();
 
   const { error } = await supabase
     .from("stores")
@@ -85,6 +91,11 @@ export async function updateStoreName(input: { storeId: string; name: string }) 
     .eq("id", parsed.data.storeId);
 
   if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(supabase, adminUserId, "update_store_name", parsed.data.storeId, parsed.data.name, {
+    previousName: previous?.name ?? null,
+    newName: parsed.data.name,
+  });
 
   revalidatePath(`/admin/stores/${parsed.data.storeId}`);
   revalidatePath("/admin");
