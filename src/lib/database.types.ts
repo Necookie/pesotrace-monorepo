@@ -280,6 +280,22 @@ export type Database = {
           },
         ];
       };
+      platform_admins: {
+        Row: {
+          user_id: string;
+          added_by: string;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          added_by: string;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_admins"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
