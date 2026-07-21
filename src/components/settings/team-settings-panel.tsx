@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { createInvitation, revokeInvitation } from "@/app/(app)/settings/team-actions";
+import {
+  createInvitation,
+  revokeInvitation,
+  changeMemberRole,
+  removeMember,
+} from "@/app/(app)/settings/team-actions";
 import type { ProfileRole } from "@/lib/database.types";
 
 type Member = { id: string; full_name: string | null; role: ProfileRole };
@@ -35,20 +41,7 @@ export function TeamSettingsPanel({
         <h2 className="text-sm font-semibold text-ink">Team members</h2>
         <div className="mt-4 space-y-2">
           {members.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between rounded-xl border border-hairline bg-canvas px-4 py-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-ink">
-                  {member.full_name || "Unnamed"}
-                  {member.id === myUserId && <span className="ml-2 text-xs text-muted">(you)</span>}
-                </p>
-              </div>
-              <span className="rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium text-ink">
-                {ROLE_LABEL[member.role]}
-              </span>
-            </div>
+            <MemberRow key={member.id} member={member} isMe={member.id === myUserId} canManage={myRole === "owner"} />
           ))}
         </div>
       </div>
@@ -68,6 +61,74 @@ export function TeamSettingsPanel({
 
           <InviteForm canInviteManagers={canInviteManagers} />
         </>
+      )}
+    </div>
+  );
+}
+
+function MemberRow({
+  member,
+  isMe,
+  canManage,
+}: {
+  member: Member;
+  isMe: boolean;
+  canManage: boolean;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const showControls = canManage && !isMe && member.role !== "owner";
+
+  async function handleRoleChange(role: "staff" | "manager") {
+    setBusy(true);
+    const result = await changeMemberRole({ memberId: member.id, role });
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Role updated");
+    router.refresh();
+  }
+
+  async function handleRemove() {
+    setBusy(true);
+    const result = await removeMember(member.id);
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Member removed");
+    router.refresh();
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hairline bg-canvas px-4 py-3">
+      <p className="min-w-0 truncate font-medium text-ink">
+        {member.full_name || "Unnamed"}
+        {isMe && <span className="ml-2 text-xs text-muted">(you)</span>}
+      </p>
+
+      {showControls ? (
+        <div className="flex items-center gap-2">
+          <select
+            value={member.role}
+            onChange={(e) => handleRoleChange(e.target.value as "staff" | "manager")}
+            disabled={busy}
+            className="h-8 rounded-md border border-hairline bg-canvas px-2 text-xs"
+          >
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+          </select>
+          <Button type="button" size="sm" variant="outline" onClick={handleRemove} disabled={busy}>
+            Remove
+          </Button>
+        </div>
+      ) : (
+        <span className="rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium text-ink">
+          {ROLE_LABEL[member.role]}
+        </span>
       )}
     </div>
   );

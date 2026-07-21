@@ -100,3 +100,89 @@ export async function revokeInvitation(invitationId: string) {
   revalidatePath("/settings/team");
   return { ok: true as const };
 }
+
+const changeRoleSchema = z.object({
+  memberId: z.string().min(1),
+  role: z.enum(["manager", "staff"]),
+});
+
+export async function changeMemberRole(input: { memberId: string; role: "manager" | "staff" }) {
+  const parsed = changeRoleSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "Invalid input" };
+
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+  if (parsed.data.memberId === userId) {
+    return { ok: false as const, error: "You can't change your own role" };
+  }
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  if (myProfile?.role !== "owner") {
+    return { ok: false as const, error: "Only the store owner can change roles" };
+  }
+
+  const { data: target } = await supabase
+    .from("profiles")
+    .select("role, store_id")
+    .eq("id", parsed.data.memberId)
+    .single();
+  if (!target || target.store_id !== storeId) {
+    return { ok: false as const, error: "That member isn't part of this store" };
+  }
+  if (target.role === "owner") {
+    return { ok: false as const, error: "The store owner's role can't be changed here" };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role: parsed.data.role })
+    .eq("id", parsed.data.memberId)
+    .eq("store_id", storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/settings/team");
+  return { ok: true as const };
+}
+
+export async function removeMember(memberId: string) {
+  const parsed = z.string().min(1).safeParse(memberId);
+  if (!parsed.success) return { ok: false as const, error: "Invalid member" };
+
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+  if (parsed.data === userId) {
+    return { ok: false as const, error: "You can't remove yourself" };
+  }
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();
+  if (myProfile?.role !== "owner") {
+    return { ok: false as const, error: "Only the store owner can remove members" };
+  }
+
+  const { data: target } = await supabase
+    .from("profiles")
+    .select("role, store_id")
+    .eq("id", parsed.data)
+    .single();
+  if (!target || target.store_id !== storeId) {
+    return { ok: false as const, error: "That member isn't part of this store" };
+  }
+  if (target.role === "owner") {
+    return { ok: false as const, error: "The store owner can't be removed" };
+  }
+
+  const { error } = await supabase.from("profiles").delete().eq("id", parsed.data).eq("store_id", storeId);
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/settings/team");
+  return { ok: true as const };
+}
