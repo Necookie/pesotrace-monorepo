@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TopNav } from "@/components/layout/top-nav";
+import { findPendingInvitationByEmail, acceptInvitation } from "@/lib/invitations/accept";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
@@ -26,9 +27,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("id", user.id)
     .maybeSingle();
 
+  // A pending invite for this email takes priority over the normal
+  // create-my-own-store onboarding below — join the store they were invited
+  // to instead of minting a brand new one, even if they arrived via a plain
+  // sign-up rather than the /invite/[token] link.
+  const pendingInvitation = !profile && email ? await findPendingInvitationByEmail(supabase, email) : null;
+
   if (profile?.stores?.name) {
     storeName = profile.stores.name;
     storeId = profile.store_id;
+  } else if (pendingInvitation) {
+    const result = await acceptInvitation(supabase, pendingInvitation, user.id, fullName);
+
+    if (result.ok) {
+      storeId = result.storeId;
+      const { data: joinedStore } = await supabase
+        .from("stores")
+        .select("name")
+        .eq("id", result.storeId)
+        .single();
+      storeName = joinedStore?.name ?? storeName;
+    } else {
+      console.error("Failed to auto-accept invitation on sign-up:", result.error);
+      throw new Error(result.error);
+    }
   } else if (!profile) {
     // Onboard new Clerk user: create store + owner profile
     const defaultStoreName = user.firstName ? `${user.firstName}'s Store` : "My Store";
