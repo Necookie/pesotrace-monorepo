@@ -126,11 +126,13 @@ export type Database = {
           store_id: string;
           balance: number;
           updated_at: string;
+          low_balance_notified_at: string | null;
         };
         Insert: {
           store_id: string;
           balance?: number;
           updated_at?: string;
+          low_balance_notified_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["store_credits"]["Insert"]>;
         Relationships: [
