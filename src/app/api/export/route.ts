@@ -31,7 +31,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
-  const rows = await listTransactions(supabase, storeId, { from, to });
+  // Same reasoning as reports/page.tsx: an export can span any date range the
+  // user picks, so the default 500-row cap would silently drop older rows.
+  const { rows } = await listTransactions(supabase, storeId, { from, to }, 5000);
   const dateStamp = new Date().toISOString().slice(0, 10);
 
   if (format === "pdf") {

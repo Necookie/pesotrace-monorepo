@@ -10,12 +10,18 @@ export type TransactionFilters = {
   to?: string;
 };
 
+export type TransactionListPage = {
+  rows: Database["public"]["Tables"]["transactions"]["Row"][];
+  hasMore: boolean;
+};
+
 export async function listTransactions(
   supabase: SupabaseClient<Database>,
   storeId: string,
   filters: TransactionFilters = {},
-  limit = 500
-) {
+  limit = 500,
+  offset = 0
+): Promise<TransactionListPage> {
   let query = supabase
     .from("transactions")
     .select("*")
@@ -38,9 +44,14 @@ export async function listTransactions(
     );
   }
 
-  const { data, error } = await query.limit(limit);
+  // Fetch one extra row past the page limit to know whether there's a next
+  // page, without a separate count(*) query.
+  const { data, error } = await query.range(offset, offset + limit);
   if (error) throw error;
-  return data;
+
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+  return { rows: hasMore ? rows.slice(0, limit) : rows, hasMore };
 }
 
 import { auth } from "@clerk/nextjs/server";

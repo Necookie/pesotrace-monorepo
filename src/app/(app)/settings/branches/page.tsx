@@ -10,7 +10,7 @@ export default async function BranchesPage() {
     ? await supabase.from("stores").select("name").eq("id", storeId).single()
     : { data: null };
 
-  const rows = storeId ? await listTransactions(supabase, storeId) : [];
+  const rows = storeId ? (await listTransactions(supabase, storeId)).rows : [];
   const totalVolume = rows.reduce((sum, r) => sum + Number(r.amount), 0);
   const totalFees = rows.reduce((sum, r) => sum + Number(r.fee_computed), 0);
 
