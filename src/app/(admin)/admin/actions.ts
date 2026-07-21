@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { captureException } from "@/lib/monitoring-server";
+import { notifyTrialApproved } from "@/app/(admin)/admin/notify";
 import type { AdminActionType, Json } from "@/lib/database.types";
 
 /**
@@ -146,6 +147,7 @@ export async function approveCreditRequest(input: { requestId: string; grantAmou
     requestId: parsed.data.requestId,
     grantAmount: parsed.data.grantAmount,
   });
+  await notifyTrialApproved(supabase, request.store_id, parsed.data.grantAmount);
 
   revalidatePath("/admin");
   revalidatePath(`/admin/stores/${request.store_id}`);
