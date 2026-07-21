@@ -4,6 +4,7 @@ import { getStoreCreditDetail } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -35,6 +36,11 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
             {detail.balance.toLocaleString()}
           </p>
         </div>
+      </div>
+
+      <h2 className="mt-8 text-sm font-semibold text-ink">Usage trend</h2>
+      <div className="mt-3">
+        <CreditUsageChart data={detail.dailyUsage} />
       </div>
 
       <h2 className="mt-8 text-sm font-semibold text-ink">Ledger history</h2>
