@@ -5,6 +5,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
+import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -36,6 +37,10 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
             {detail.balance.toLocaleString()}
           </p>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <AdjustCreditsForm storeId={detail.storeId} />
       </div>
 
       <h2 className="mt-8 text-sm font-semibold text-ink">Usage trend</h2>
