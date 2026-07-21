@@ -7,6 +7,7 @@ import { feeTierConfigSchema, type FeeTierConfig } from "@/lib/schemas/fee-tier"
 import { storePhoneNumbersSchema, type StorePhoneNumbers } from "@/lib/schemas/store-phone";
 import { notifyNewTrialRequest } from "@/lib/email/notify-operator";
 import { trackServerEvent, ServerEvent } from "@/lib/analytics/events-server";
+import type { NotificationPrefs } from "@/lib/database.types";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -41,6 +42,35 @@ export async function updateFeeTiers(config: FeeTierConfig) {
   if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/settings/fee-tiers");
+  return { ok: true as const };
+}
+
+export async function updateNotificationPrefs(prefs: NotificationPrefs) {
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (myProfile?.role !== "owner" && myProfile?.role !== "manager") {
+    return { ok: false as const, error: "Only owners or managers can edit notification settings" };
+  }
+
+  const { error } = await supabase
+    .from("stores")
+    .update({ notification_prefs: prefs })
+    .eq("id", storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/settings/notifications");
   return { ok: true as const };
 }
 

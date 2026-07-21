@@ -39,13 +39,16 @@ export async function runLowBalanceSweep(): Promise<LowBalanceSweepResult> {
   for (const row of dueForNotification) {
     try {
       const [{ data: store }, ownerEmail] = await Promise.all([
-        supabase.from("stores").select("name").eq("id", row.store_id).maybeSingle(),
+        supabase.from("stores").select("name, notification_prefs").eq("id", row.store_id).maybeSingle(),
         getStoreOwnerEmail(supabase, row.store_id),
       ]);
       const storeName = store?.name ?? "Unnamed store";
+      // The operator digest always includes every low-balance store
+      // regardless of that store's own notification prefs — those prefs
+      // only control the owner-facing email below.
       digestEntries.push({ name: storeName, balance: row.balance });
 
-      if (ownerEmail) {
+      if (ownerEmail && (!store?.notification_prefs || store.notification_prefs.lowBalance)) {
         await sendEmail({
           to: ownerEmail,
           subject: row.balance <= 0 ? `${storeName} is out of AI credits` : `${storeName} is running low on credits`,

@@ -15,10 +15,11 @@ export async function notifyExtractionFailed(
 ): Promise<void> {
   try {
     const [{ data: store }, ownerEmail] = await Promise.all([
-      supabase.from("stores").select("name").eq("id", storeId).maybeSingle(),
+      supabase.from("stores").select("name, notification_prefs").eq("id", storeId).maybeSingle(),
       getStoreOwnerEmail(supabase, storeId),
     ]);
     if (!ownerEmail) return;
+    if (store?.notification_prefs && !store.notification_prefs.extractionFailed) return;
 
     const storeName = store?.name ?? "your store";
     await sendEmail({

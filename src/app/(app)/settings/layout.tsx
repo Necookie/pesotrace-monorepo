@@ -10,6 +10,7 @@ const NAV = [
   { href: "/settings/branches", label: "Branches" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/credits", label: "AI credits" },
+  { href: "/settings/notifications", label: "Notifications" },
   { href: "/settings/danger-zone", label: "Danger zone" },
 ];
 
@@ -41,15 +42,6 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             </Link>
           );
         })}
-        <div className="hidden rounded-pill px-3 py-1.5 text-sm text-muted-soft sm:block">
-          Retention policy
-        </div>
-        <div className="hidden rounded-pill px-3 py-1.5 text-sm text-muted-soft sm:block">
-          Branding
-        </div>
-        <div className="hidden rounded-pill px-3 py-1.5 text-sm text-muted-soft sm:block">
-          Notifications
-        </div>
       </aside>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
