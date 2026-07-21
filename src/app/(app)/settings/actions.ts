@@ -78,6 +78,35 @@ export async function updateStorePhoneNumbers(numbers: StorePhoneNumbers) {
   return { ok: true as const };
 }
 
+export async function requestTrialCredits() {
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId(supabase);
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  const { data: existing } = await supabase
+    .from("credit_requests")
+    .select("id")
+    .eq("store_id", storeId)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (existing) {
+    return { ok: false as const, error: "You already have a trial request pending review" };
+  }
+
+  const { error } = await supabase
+    .from("credit_requests")
+    .insert({ store_id: storeId, requested_by: userId });
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/settings/credits");
+  return { ok: true as const };
+}
+
 export async function clearTransactionHistory(confirmation: string) {
   if (confirmation !== "DELETE") {
     return { ok: false as const, error: "Confirmation text did not match" };
