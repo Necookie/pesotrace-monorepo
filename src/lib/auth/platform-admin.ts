@@ -1,13 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-function bootstrapAdminIds(): string[] {
-  return (process.env.PLATFORM_ADMIN_USER_IDS ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-}
+import { isBootstrapAdmin } from "@/lib/auth/bootstrap-admins";
 
 /**
  * Checks the env-var bootstrap list first (no DB round trip for the common
@@ -17,7 +11,7 @@ function bootstrapAdminIds(): string[] {
  */
 export async function isPlatformAdmin(userId: string | null | undefined): Promise<boolean> {
   if (!userId) return false;
-  if (bootstrapAdminIds().includes(userId)) return true;
+  if (isBootstrapAdmin(userId, process.env.PLATFORM_ADMIN_USER_IDS)) return true;
 
   const supabase = createAdminClient();
   const { data } = await supabase.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle();
