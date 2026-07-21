@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { adjustStoreCredits } from "@/app/(admin)/admin/actions";
 
 export function AdjustCreditsForm({ storeId }: { storeId: string }) {
@@ -39,28 +40,34 @@ export function AdjustCreditsForm({ storeId }: { storeId: string }) {
   return (
     <form onSubmit={handleSubmit} className="rounded-2xl border border-hairline p-4 sm:p-6">
       <h2 className="text-sm font-semibold text-ink">Adjust credits</h2>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1.5 text-xs text-muted">
         Positive to grant/top up, negative to remove. A note is required for the audit trail.
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-[160px_1fr]">
-        <Input
-          type="number"
-          step="1"
-          value={delta}
-          onChange={(e) => setDelta(e.target.value)}
-          placeholder="e.g. 50 or -20"
-          className="font-mono"
-        />
-        <Input
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Reason (e.g. approved trial, manual top-up)"
-        />
+      <div className="mt-5 grid gap-4 sm:grid-cols-[160px_1fr]">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted">Amount</Label>
+          <Input
+            type="number"
+            step="1"
+            value={delta}
+            onChange={(e) => setDelta(e.target.value)}
+            placeholder="e.g. 50 or -20"
+            className="font-mono"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted">Note</Label>
+          <Input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Reason (e.g. approved trial, manual top-up)"
+          />
+        </div>
       </div>
 
-      <Button type="submit" className="mt-4" disabled={saving}>
+      <Button type="submit" className="mt-5" disabled={saving}>
         {saving ? "Saving..." : "Apply adjustment"}
       </Button>
     </form>

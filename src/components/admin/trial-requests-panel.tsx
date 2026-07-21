@@ -54,39 +54,46 @@ export function TrialRequestsPanel({ requests }: { requests: PendingCreditReques
   return (
     <div className="mb-6 rounded-2xl border border-hairline bg-canvas p-4 sm:p-6">
       <h2 className="text-sm font-semibold text-ink">Pending trial requests</h2>
-      <div className="mt-3 space-y-2">
+      <p className="mt-1.5 text-xs text-muted">
+        Approve to grant the amount below via a &ldquo;grant&rdquo; ledger entry, or deny to dismiss.
+      </p>
+      <div className="mt-4 space-y-3">
         {requests.map((request) => (
           <div
             key={request.id}
-            className="flex flex-wrap items-center gap-3 rounded-pill border border-hairline px-3 py-2"
+            className="flex flex-col gap-3 rounded-xl border border-hairline bg-surface-soft px-4 py-3 sm:flex-row sm:items-center"
           >
-            <span className="font-medium text-ink">{request.storeName}</span>
-            <span className="text-xs text-muted">Requested {formatDateTime(request.createdAt)}</span>
-            <Input
-              type="number"
-              step="1"
-              placeholder={String(DEFAULT_GRANT)}
-              value={amounts[request.id] ?? ""}
-              onChange={(e) => setAmounts((prev) => ({ ...prev, [request.id]: e.target.value }))}
-              className="ml-auto w-24 font-mono"
-            />
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => handleApprove(request.id)}
-              disabled={pendingId === request.id}
-            >
-              Approve
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => handleDeny(request.id)}
-              disabled={pendingId === request.id}
-            >
-              Deny
-            </Button>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">{request.storeName}</p>
+              <p className="text-xs text-muted">Requested {formatDateTime(request.createdAt)}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                step="1"
+                placeholder={String(DEFAULT_GRANT)}
+                value={amounts[request.id] ?? ""}
+                onChange={(e) => setAmounts((prev) => ({ ...prev, [request.id]: e.target.value }))}
+                className="w-24 font-mono"
+              />
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => handleApprove(request.id)}
+                disabled={pendingId === request.id}
+              >
+                Approve
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => handleDeny(request.id)}
+                disabled={pendingId === request.id}
+              >
+                Deny
+              </Button>
+            </div>
           </div>
         ))}
       </div>
