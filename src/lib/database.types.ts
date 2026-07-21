@@ -24,6 +24,11 @@ export type FeeTier = {
   fee: number;
 };
 
+export type NotificationPrefs = {
+  extractionFailed: boolean;
+  lowBalance: boolean;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -33,6 +38,7 @@ export type Database = {
           name: string;
           fee_tier_config: FeeTier[];
           phone_numbers: string[];
+          notification_prefs: NotificationPrefs;
           created_at: string;
         };
         Insert: {
@@ -40,6 +46,7 @@ export type Database = {
           name: string;
           fee_tier_config?: FeeTier[];
           phone_numbers?: string[];
+          notification_prefs?: NotificationPrefs;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["stores"]["Insert"]>;
