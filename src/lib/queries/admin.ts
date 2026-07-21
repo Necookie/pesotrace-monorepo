@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, CreditEntryType, TransactionSource } from "@/lib/database.types";
+import type { Database, CreditEntryType, TransactionSource, AdminActionType, Json } from "@/lib/database.types";
 import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
 import type { RequestVolumePoint } from "@/components/charts/request-volume-chart";
 import { formatDate } from "@/lib/format";
@@ -262,5 +262,51 @@ export async function listPendingCreditRequests(
     storeName: nameByStoreId.get(r.store_id) ?? "Unknown store",
     requestedBy: r.requested_by,
     createdAt: r.created_at,
+  }));
+}
+
+const AUDIT_LOG_LIMIT = 200;
+
+export type AdminAuditLogEntry = {
+  id: string;
+  actorUserId: string;
+  action: AdminActionType;
+  storeId: string | null;
+  storeName: string | null;
+  targetSummary: string | null;
+  metadata: Json;
+  createdAt: string;
+};
+
+export async function listAuditLog(
+  supabase: SupabaseClient<Database>,
+  limit = AUDIT_LOG_LIMIT
+): Promise<AdminAuditLogEntry[]> {
+  const { data: entries, error } = await supabase
+    .from("admin_audit_log")
+    .select("id, actor_user_id, action, store_id, target_summary, metadata, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  if (!entries || entries.length === 0) return [];
+
+  const storeIds = [...new Set(entries.map((e) => e.store_id).filter((id): id is string => id !== null))];
+  let nameByStoreId = new Map<string, string>();
+  if (storeIds.length > 0) {
+    const { data: stores, error: storesError } = await supabase.from("stores").select("id, name").in("id", storeIds);
+    if (storesError) throw storesError;
+    nameByStoreId = new Map((stores ?? []).map((s) => [s.id, s.name]));
+  }
+
+  return entries.map((e) => ({
+    id: e.id,
+    actorUserId: e.actor_user_id,
+    action: e.action,
+    storeId: e.store_id,
+    storeName: e.store_id ? (nameByStoreId.get(e.store_id) ?? "Deleted store") : null,
+    targetSummary: e.target_summary,
+    metadata: e.metadata,
+    createdAt: e.created_at,
   }));
 }
