@@ -5,6 +5,7 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { extractStatementFromPdf } from "@/lib/gemini/extract-statement";
 import { reconcileStatement } from "@/lib/reconciliation";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { creditsForExtraction } from "@/lib/credits/pricing";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -80,11 +81,32 @@ export async function POST(request: Request) {
   }
 
   if (!extractionResult.ok) {
+    // Google still bills for a failed call — log the real cost without
+    // charging the store's credit balance for a result they can't use.
+    await supabase.rpc("consume_credit", {
+      p_store_id: storeId,
+      p_credits: 0,
+      p_cost_usd: extractionResult.cost.costUsd,
+      p_source_type: "statement",
+      p_input_tokens: extractionResult.cost.inputTokens,
+      p_output_tokens: extractionResult.cost.outputTokens,
+      p_created_by: userId,
+    });
     return NextResponse.json(
       { error: extractionResult.error, cost: extractionResult.cost },
       { status: 422 }
     );
   }
+
+  await supabase.rpc("consume_credit", {
+    p_store_id: storeId,
+    p_credits: creditsForExtraction(extractionResult.cost.costUsd),
+    p_cost_usd: extractionResult.cost.costUsd,
+    p_source_type: "statement",
+    p_input_tokens: extractionResult.cost.inputTokens,
+    p_output_tokens: extractionResult.cost.outputTokens,
+    p_created_by: userId,
+  });
 
   const reconciliation = reconcileStatement(extractionResult.rows);
 
