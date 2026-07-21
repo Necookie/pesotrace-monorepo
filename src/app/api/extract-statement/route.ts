@@ -6,6 +6,7 @@ import { extractStatementFromPdf } from "@/lib/gemini/extract-statement";
 import { reconcileStatement } from "@/lib/reconciliation";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { creditsForExtraction } from "@/lib/credits/pricing";
+import { captureException } from "@/lib/monitoring-server";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -16,6 +17,15 @@ const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (error) {
+    await captureException(error, "server", { route: "api/extract-statement" });
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+  }
+}
+
+async function handlePost(request: Request) {
   const { userId } = await auth();
 
   if (!userId) {

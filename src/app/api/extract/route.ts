@@ -5,6 +5,7 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { extractTransactionFromImage } from "@/lib/gemini/extract-transaction";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { creditsForExtraction } from "@/lib/credits/pricing";
+import { captureException } from "@/lib/monitoring-server";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -16,6 +17,15 @@ const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 
 export async function POST(request: Request) {
+  try {
+    return await handlePost(request);
+  } catch (error) {
+    await captureException(error, "server", { route: "api/extract" });
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+  }
+}
+
+async function handlePost(request: Request) {
   const { userId } = await auth();
 
   if (!userId) {
