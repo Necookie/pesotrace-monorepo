@@ -123,3 +123,69 @@ export async function denyCreditRequest(requestId: string) {
   revalidatePath("/admin");
   return { ok: true as const };
 }
+
+const STORAGE_LIST_PAGE_SIZE = 1000;
+
+async function deleteStoreStorageFiles(
+  supabase: ReturnType<typeof createAdminClient>,
+  storeId: string
+) {
+  let offset = 0;
+  for (;;) {
+    const { data: files, error } = await supabase.storage
+      .from("transaction-sources")
+      .list(storeId, { limit: STORAGE_LIST_PAGE_SIZE, offset });
+    if (error) throw error;
+    if (!files || files.length === 0) break;
+
+    const paths = files.map((f) => `${storeId}/${f.name}`);
+    const { error: removeError } = await supabase.storage.from("transaction-sources").remove(paths);
+    if (removeError) throw removeError;
+
+    if (files.length < STORAGE_LIST_PAGE_SIZE) break;
+    offset += STORAGE_LIST_PAGE_SIZE;
+  }
+}
+
+const deleteStoreSchema = z.object({
+  storeId: z.string().uuid(),
+  confirmName: z.string(),
+});
+
+export async function deleteStore(input: { storeId: string; confirmName: string }) {
+  const parsed = deleteStoreSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: "Invalid input" };
+  }
+
+  await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const { data: store, error: fetchError } = await supabase
+    .from("stores")
+    .select("id, name")
+    .eq("id", parsed.data.storeId)
+    .single();
+  if (fetchError) return { ok: false as const, error: fetchError.message };
+
+  if (parsed.data.confirmName !== store.name) {
+    return { ok: false as const, error: "Store name did not match" };
+  }
+
+  try {
+    await deleteStoreStorageFiles(supabase, parsed.data.storeId);
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? `Failed to clean up storage: ${e.message}` : "Failed to clean up storage",
+    };
+  }
+
+  // FK cascades (profiles, transactions, store_credits, credit_ledger,
+  // credit_requests -> stores) remove everything else in one statement.
+  const { error: deleteError } = await supabase.from("stores").delete().eq("id", parsed.data.storeId);
+  if (deleteError) return { ok: false as const, error: deleteError.message };
+
+  revalidatePath("/admin");
+  return { ok: true as const };
+}
