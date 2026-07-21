@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, TransactionCategory } from "@/lib/database.types";
+import { paginateRows } from "@/lib/pagination";
 
 export type TransactionFilters = {
   direction?: "send" | "receive";
@@ -49,9 +50,7 @@ export async function listTransactions(
   const { data, error } = await query.range(offset, offset + limit);
   if (error) throw error;
 
-  const rows = data ?? [];
-  const hasMore = rows.length > limit;
-  return { rows: hasMore ? rows.slice(0, limit) : rows, hasMore };
+  return paginateRows(data ?? [], limit);
 }
 
 import { auth } from "@clerk/nextjs/server";

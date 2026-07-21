@@ -4,6 +4,7 @@ import type { Database, CreditEntryType, TransactionSource, AdminActionType, Jso
 import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
 import type { RequestVolumePoint } from "@/components/charts/request-volume-chart";
 import { formatDate } from "@/lib/format";
+import { paginateRows } from "@/lib/pagination";
 
 const LEDGER_HISTORY_LIMIT = 200;
 const ANALYTICS_WINDOW_DAYS = 30;
@@ -116,9 +117,7 @@ export async function getStoreCreditDetail(
   if (ledgerError) throw ledgerError;
   if (!store) return null;
 
-  const ledgerRows = ledgerPage ?? [];
-  const ledgerHasMore = ledgerRows.length > LEDGER_HISTORY_LIMIT;
-  const ledger = ledgerHasMore ? ledgerRows.slice(0, LEDGER_HISTORY_LIMIT) : ledgerRows;
+  const { rows: ledger, hasMore: ledgerHasMore } = paginateRows(ledgerPage ?? [], LEDGER_HISTORY_LIMIT);
 
   return {
     storeId: store.id,
