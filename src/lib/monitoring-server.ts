@@ -31,3 +31,22 @@ export async function captureException(
     // Swallow — error reporting must never crash the caller.
   }
 }
+
+/**
+ * Reports a server-side analytics event to PostHog. Uses the immediate send
+ * for the same reason as captureException — a serverless invocation can be
+ * torn down right after responding, before a batched client gets to flush.
+ */
+export async function captureServerEvent(
+  event: string,
+  distinctId: string,
+  properties?: Record<string, unknown>
+): Promise<void> {
+  try {
+    const ph = getClient();
+    if (!ph) return;
+    await ph.captureImmediate({ distinctId, event, properties });
+  } catch {
+    // Swallow — analytics must never crash the caller.
+  }
+}
