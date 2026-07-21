@@ -34,6 +34,32 @@ export async function adjustStoreCredits(input: { storeId: string; delta: number
   return { ok: true as const };
 }
 
+const updateStoreNameSchema = z.object({
+  storeId: z.string().uuid(),
+  name: z.string().trim().min(1, "Store name can't be empty").max(120, "Store name is too long"),
+});
+
+export async function updateStoreName(input: { storeId: string; name: string }) {
+  const parsed = updateStoreNameSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("stores")
+    .update({ name: parsed.data.name })
+    .eq("id", parsed.data.storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath(`/admin/stores/${parsed.data.storeId}`);
+  revalidatePath("/admin");
+  return { ok: true as const };
+}
+
 const approveRequestSchema = z.object({
   requestId: z.string().uuid(),
   grantAmount: z.number().positive("Grant amount must be greater than zero"),
