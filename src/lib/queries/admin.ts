@@ -2,9 +2,67 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, CreditEntryType, TransactionSource } from "@/lib/database.types";
 import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
+import type { RequestVolumePoint } from "@/components/charts/request-volume-chart";
 import { formatDate } from "@/lib/format";
 
 const LEDGER_HISTORY_LIMIT = 200;
+const ANALYTICS_WINDOW_DAYS = 30;
+
+export type StoreAnalytics = {
+  requestsToday: number;
+  requestsThisWeek: number;
+  dailyRequestCounts: RequestVolumePoint[];
+  dailyCreditUsage: CreditUsagePoint[];
+};
+
+/**
+ * Date-ranged aggregation, independent of the LEDGER_HISTORY_LIMIT used for
+ * the ledger history table — a high-volume store's last 200 ledger rows
+ * (of any entry type) can span far less than 30 days, which would silently
+ * truncate "today"/"this week" counts if derived from that same query.
+ */
+export async function getStoreAnalytics(
+  supabase: SupabaseClient<Database>,
+  storeId: string,
+  days = ANALYTICS_WINDOW_DAYS
+): Promise<StoreAnalytics> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: entries, error } = await supabase
+    .from("credit_ledger")
+    .select("credit_delta, created_at")
+    .eq("store_id", storeId)
+    .eq("entry_type", "consumption")
+    .gte("created_at", since);
+
+  if (error) throw error;
+
+  const countByDay = new Map<string, number>();
+  const creditsByDay = new Map<string, number>();
+  for (const entry of entries ?? []) {
+    const key = dayKey(entry.created_at);
+    countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
+    creditsByDay.set(key, (creditsByDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
+  }
+
+  const todayKey = dayKey(new Date().toISOString());
+  const weekAgoKey = dayKey(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString());
+
+  const requestsToday = countByDay.get(todayKey) ?? 0;
+  const requestsThisWeek = [...countByDay.entries()]
+    .filter(([day]) => day >= weekAgoKey)
+    .reduce((sum, [, count]) => sum + count, 0);
+
+  const dailyRequestCounts: RequestVolumePoint[] = [...countByDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, count]) => ({ label: formatDate(day), count }));
+
+  const dailyCreditUsage: CreditUsagePoint[] = [...creditsByDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, credits]) => ({ label: formatDate(day), credits }));
+
+  return { requestsToday, requestsThisWeek, dailyRequestCounts, dailyCreditUsage };
+}
 
 export type CreditLedgerEntry = {
   id: string;
@@ -22,6 +80,9 @@ export type AdminStoreDetail = {
   storeName: string;
   balance: number;
   ledger: CreditLedgerEntry[];
+  requestsToday: number;
+  requestsThisWeek: number;
+  dailyRequestCounts: RequestVolumePoint[];
   dailyUsage: CreditUsagePoint[];
 };
 
@@ -29,32 +90,27 @@ export async function getStoreCreditDetail(
   supabase: SupabaseClient<Database>,
   storeId: string
 ): Promise<AdminStoreDetail | null> {
-  const [{ data: store, error: storeError }, { data: credit, error: creditError }, { data: ledger, error: ledgerError }] =
-    await Promise.all([
-      supabase.from("stores").select("id, name").eq("id", storeId).maybeSingle(),
-      supabase.from("store_credits").select("balance").eq("store_id", storeId).maybeSingle(),
-      supabase
-        .from("credit_ledger")
-        .select("id, entry_type, credit_delta, cost_usd, source_type, note, created_by, created_at")
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(LEDGER_HISTORY_LIMIT),
-    ]);
+  const [
+    { data: store, error: storeError },
+    { data: credit, error: creditError },
+    { data: ledger, error: ledgerError },
+    analytics,
+  ] = await Promise.all([
+    supabase.from("stores").select("id, name").eq("id", storeId).maybeSingle(),
+    supabase.from("store_credits").select("balance").eq("store_id", storeId).maybeSingle(),
+    supabase
+      .from("credit_ledger")
+      .select("id, entry_type, credit_delta, cost_usd, source_type, note, created_by, created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(LEDGER_HISTORY_LIMIT),
+    getStoreAnalytics(supabase, storeId),
+  ]);
 
   if (storeError) throw storeError;
   if (creditError) throw creditError;
   if (ledgerError) throw ledgerError;
   if (!store) return null;
-
-  const usageByDay = new Map<string, number>();
-  for (const entry of ledger ?? []) {
-    if (entry.entry_type !== "consumption") continue;
-    const key = dayKey(entry.created_at);
-    usageByDay.set(key, (usageByDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
-  }
-  const dailyUsage: CreditUsagePoint[] = [...usageByDay.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, creditsUsed]) => ({ label: formatDate(day), credits: creditsUsed }));
 
   return {
     storeId: store.id,
@@ -70,7 +126,10 @@ export async function getStoreCreditDetail(
       createdBy: entry.created_by,
       createdAt: entry.created_at,
     })),
-    dailyUsage,
+    requestsToday: analytics.requestsToday,
+    requestsThisWeek: analytics.requestsThisWeek,
+    dailyRequestCounts: analytics.dailyRequestCounts,
+    dailyUsage: analytics.dailyCreditUsage,
   };
 }
 
