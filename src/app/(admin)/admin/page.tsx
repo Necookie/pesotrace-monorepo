@@ -1,21 +1,29 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listStoresWithCredits } from "@/lib/queries/admin";
+import { listStoresWithCredits, listPendingCreditRequests } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
+import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
-  const stores = await listStoresWithCredits(supabase);
+  const [stores, pendingRequests] = await Promise.all([
+    listStoresWithCredits(supabase),
+    listPendingCreditRequests(supabase),
+  ]);
 
   return (
     <div>
       <h1 className="text-xl font-semibold text-ink">Stores</h1>
       <p className="mt-1 text-sm text-body">Credit balances and usage across every store.</p>
 
-      <div className="mt-6 rounded-2xl border border-hairline">
+      <div className="mt-6">
+        <TrialRequestsPanel requests={pendingRequests} />
+      </div>
+
+      <div className="rounded-2xl border border-hairline">
         <Table>
           <TableHeader>
             <TableRow>

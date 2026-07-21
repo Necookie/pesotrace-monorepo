@@ -150,3 +150,41 @@ export async function listStoresWithCredits(
     };
   });
 }
+
+export type PendingCreditRequest = {
+  id: string;
+  storeId: string;
+  storeName: string;
+  requestedBy: string | null;
+  createdAt: string;
+};
+
+export async function listPendingCreditRequests(
+  supabase: SupabaseClient<Database>
+): Promise<PendingCreditRequest[]> {
+  const { data: requests, error: requestsError } = await supabase
+    .from("credit_requests")
+    .select("id, store_id, requested_by, created_at")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (requestsError) throw requestsError;
+  if (!requests || requests.length === 0) return [];
+
+  const storeIds = [...new Set(requests.map((r) => r.store_id))];
+  const { data: stores, error: storesError } = await supabase
+    .from("stores")
+    .select("id, name")
+    .in("id", storeIds);
+
+  if (storesError) throw storesError;
+  const nameByStoreId = new Map((stores ?? []).map((s) => [s.id, s.name]));
+
+  return requests.map((r) => ({
+    id: r.id,
+    storeId: r.store_id,
+    storeName: nameByStoreId.get(r.store_id) ?? "Unknown store",
+    requestedBy: r.requested_by,
+    createdAt: r.created_at,
+  }));
+}
