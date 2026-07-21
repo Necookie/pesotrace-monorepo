@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
+import { KpiTile } from "@/components/dashboard/kpi-tile";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
@@ -14,10 +15,21 @@ export default async function AdminOverviewPage() {
     listPendingCreditRequests(supabase),
   ]);
 
+  const totalBalance = stores.reduce((sum, s) => sum + s.balance, 0);
+  const totalCost30d = stores.reduce((sum, s) => sum + s.costUsdThisMonth, 0);
+  const storesOutOfCredits = stores.filter((s) => s.balance <= 0).length;
+
   return (
     <div>
-      <h1 className="text-xl font-semibold text-ink">Stores</h1>
+      <h1 className="text-2xl font-medium text-ink">Stores</h1>
       <p className="mt-1 text-sm text-body">Credit balances and usage across every store.</p>
+
+      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <KpiTile label="Stores" value={String(stores.length)} />
+        <KpiTile label="Total credit balance" value={totalBalance.toLocaleString()} />
+        <KpiTile label="Real cost (30d)" value={formatExtractionCost(totalCost30d)} />
+        <KpiTile label="Out of credits" value={String(storesOutOfCredits)} />
+      </div>
 
       <div className="mt-6">
         <TrialRequestsPanel requests={pendingRequests} />
