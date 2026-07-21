@@ -80,6 +80,7 @@ export type AdminStoreDetail = {
   storeName: string;
   balance: number;
   ledger: CreditLedgerEntry[];
+  ledgerHasMore: boolean;
   requestsToday: number;
   requestsThisWeek: number;
   dailyRequestCounts: RequestVolumePoint[];
@@ -88,12 +89,13 @@ export type AdminStoreDetail = {
 
 export async function getStoreCreditDetail(
   supabase: SupabaseClient<Database>,
-  storeId: string
+  storeId: string,
+  ledgerOffset = 0
 ): Promise<AdminStoreDetail | null> {
   const [
     { data: store, error: storeError },
     { data: credit, error: creditError },
-    { data: ledger, error: ledgerError },
+    { data: ledgerPage, error: ledgerError },
     analytics,
   ] = await Promise.all([
     supabase.from("stores").select("id, name").eq("id", storeId).maybeSingle(),
@@ -103,7 +105,9 @@ export async function getStoreCreditDetail(
       .select("id, entry_type, credit_delta, cost_usd, source_type, note, created_by, created_at")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
-      .limit(LEDGER_HISTORY_LIMIT),
+      // Fetch one extra row past the page to know if there's a next page,
+      // without a separate count(*) query.
+      .range(ledgerOffset, ledgerOffset + LEDGER_HISTORY_LIMIT),
     getStoreAnalytics(supabase, storeId),
   ]);
 
@@ -112,11 +116,15 @@ export async function getStoreCreditDetail(
   if (ledgerError) throw ledgerError;
   if (!store) return null;
 
+  const ledgerRows = ledgerPage ?? [];
+  const ledgerHasMore = ledgerRows.length > LEDGER_HISTORY_LIMIT;
+  const ledger = ledgerHasMore ? ledgerRows.slice(0, LEDGER_HISTORY_LIMIT) : ledgerRows;
+
   return {
     storeId: store.id,
     storeName: store.name,
     balance: credit?.balance ?? 0,
-    ledger: (ledger ?? []).map((entry) => ({
+    ledger: ledger.map((entry) => ({
       id: entry.id,
       entryType: entry.entry_type,
       creditDelta: entry.credit_delta,
@@ -126,6 +134,7 @@ export async function getStoreCreditDetail(
       createdBy: entry.created_by,
       createdAt: entry.created_at,
     })),
+    ledgerHasMore,
     requestsToday: analytics.requestsToday,
     requestsThisWeek: analytics.requestsThisWeek,
     dailyRequestCounts: analytics.dailyRequestCounts,
