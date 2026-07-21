@@ -13,6 +13,7 @@ export type AdminActionType =
   | "delete_store"
   | "grant_admin"
   | "revoke_admin";
+export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -244,6 +245,41 @@ export type Database = {
           },
         ];
       };
+      invitations: {
+        Row: {
+          id: string;
+          store_id: string;
+          email: string;
+          role: ProfileRole;
+          token: string;
+          invited_by: string;
+          status: InvitationStatus;
+          expires_at: string;
+          accepted_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          email: string;
+          role?: ProfileRole;
+          token: string;
+          invited_by: string;
+          status?: InvitationStatus;
+          expires_at: string;
+          accepted_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["invitations"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "invitations_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -290,6 +326,7 @@ export type Database = {
       credit_entry_type: CreditEntryType;
       credit_request_status: CreditRequestStatus;
       admin_action_type: AdminActionType;
+      invitation_status: InvitationStatus;
     };
     CompositeTypes: Record<string, never>;
   };
