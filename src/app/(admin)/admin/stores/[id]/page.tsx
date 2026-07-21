@@ -7,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
+import { RequestVolumeChart } from "@/components/charts/request-volume-chart";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
@@ -67,9 +68,15 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
         <AdjustCreditsForm storeId={detail.storeId} />
       </div>
 
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-ink">Usage trend</h2>
-        <CreditUsageChart data={detail.dailyUsage} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-ink">Requests per day (30d)</h2>
+          <RequestVolumeChart data={detail.dailyRequestCounts} />
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-ink">Credit usage (30d)</h2>
+          <CreditUsageChart data={detail.dailyUsage} />
+        </div>
       </div>
 
       <div>
