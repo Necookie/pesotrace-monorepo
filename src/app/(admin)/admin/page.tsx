@@ -7,6 +7,7 @@ import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
+import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
@@ -45,7 +46,8 @@ export default async function AdminOverviewPage() {
               <TableHead className="py-3 text-right">Extractions (30d)</TableHead>
               <TableHead className="py-3 text-right">Real cost (30d)</TableHead>
               <TableHead className="py-3">Usage trend</TableHead>
-              <TableHead className="py-3 pr-4 text-right">Last activity</TableHead>
+              <TableHead className="py-3 text-right">Last activity</TableHead>
+              <TableHead className="w-10 py-3 pr-4" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -78,14 +80,17 @@ export default async function AdminOverviewPage() {
                 <TableCell className="py-3">
                   <CreditUsageChart data={store.dailyUsage} compact />
                 </TableCell>
-                <TableCell className="py-3 pr-4 text-right text-sm text-muted">
+                <TableCell className="py-3 text-right text-sm text-muted">
                   {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "—"}
+                </TableCell>
+                <TableCell className="py-3 pr-4">
+                  <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
                 </TableCell>
               </TableRow>
             ))}
             {stores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted">
+                <TableCell colSpan={7} className="py-10 text-center text-muted">
                   No stores yet.
                 </TableCell>
               </TableRow>
