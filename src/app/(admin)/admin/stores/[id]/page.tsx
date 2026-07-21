@@ -10,6 +10,7 @@ import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
+import { KpiTile } from "@/components/dashboard/kpi-tile";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -45,22 +46,26 @@ export default async function AdminStoreDetailPage({ params }: { params: Promise
         <h1 className="mt-2 text-2xl font-medium text-ink">{detail.storeName}</h1>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-hairline bg-canvas p-6">
-          <p className="text-sm text-muted">Credit balance</p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl border border-hairline bg-canvas p-4 sm:p-6">
+          <p className="text-xs text-muted sm:text-sm">Credit balance</p>
           <p
             className={cn(
-              "mt-1.5 font-mono text-3xl font-semibold",
+              "mt-1.5 font-mono text-lg font-semibold sm:text-2xl",
               detail.balance <= 0 ? "text-down" : "text-ink"
             )}
           >
             {detail.balance.toLocaleString()}
           </p>
         </div>
-        <RenameStoreForm storeId={detail.storeId} currentName={detail.storeName} />
+        <KpiTile label="Requests today" value={String(detail.requestsToday)} />
+        <KpiTile label="Requests this week" value={String(detail.requestsThisWeek)} />
       </div>
 
-      <AdjustCreditsForm storeId={detail.storeId} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <RenameStoreForm storeId={detail.storeId} currentName={detail.storeName} />
+        <AdjustCreditsForm storeId={detail.storeId} />
+      </div>
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-ink">Usage trend</h2>
