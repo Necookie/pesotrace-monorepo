@@ -1,11 +1,34 @@
 import { redirect } from "next/navigation";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TopNav } from "@/components/layout/top-nav";
 import { findPendingInvitationByEmail, acceptInvitation } from "@/lib/invitations/accept";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await currentUser();
+  // auth() reads the already-verified session locally (no network call).
+  // currentUser() hits Clerk's Backend API — run it in parallel with the
+  // Supabase profile query instead of blocking on it first, since neither
+  // depends on the other's result (only on the userId auth() already gives
+  // us for free). This layout runs on every navigation, so serializing
+  // these was costing a full extra round trip on every single page load.
+  const { userId } = await auth();
+  if (!userId) {
+    redirect("/login");
+  }
+
+  const supabase = createAdminClient();
+
+  const [user, profileResult] = await Promise.all([
+    currentUser(),
+    // Embeds store_credits in the same round trip as the profile/store
+    // lookup — this used to be a separate sequential query below.
+    supabase
+      .from("profiles")
+      .select("store_id, stores(name, store_credits(balance))")
+      .eq("id", userId)
+      .maybeSingle(),
+  ]);
+
   if (!user) {
     redirect("/login");
   }
@@ -13,19 +36,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const email = user.emailAddresses[0]?.emailAddress ?? "";
   const fullName = user.fullName ?? "";
 
-  const supabase = createAdminClient();
   let storeName = "My Store";
-  let storeId: string | null = null;
+  let creditBalance = 0;
 
-  // Check if profile exists for this Clerk user. Joins the store name in the
-  // same round trip since that's needed on every request too — this layout
-  // runs on every page navigation, so the existing-user path (the common
-  // case) should cost one query, not two.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("store_id, stores(name)")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { data: profile } = profileResult;
+  // store_credits.store_id is a 1:1 PK relationship. PostgREST confirmed
+  // (verified against the live API) it returns this embed as a single
+  // object, but supabase-js's generic inference — given this hand-written
+  // Database type's Relationships metadata — types it as an array. Cast
+  // rather than index, since indexing [0] would silently break this.
+  const embeddedCredit = profile?.stores?.store_credits as unknown as { balance: number } | null | undefined;
+  if (embeddedCredit) {
+    creditBalance = embeddedCredit.balance;
+  }
 
   // A pending invite for this email takes priority over the normal
   // create-my-own-store onboarding below — join the store they were invited
@@ -35,12 +58,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (profile?.stores?.name) {
     storeName = profile.stores.name;
-    storeId = profile.store_id;
   } else if (pendingInvitation) {
     const result = await acceptInvitation(supabase, pendingInvitation, user.id, fullName);
 
     if (result.ok) {
-      storeId = result.storeId;
       const { data: joinedStore } = await supabase
         .from("stores")
         .select("name")
@@ -66,7 +87,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
 
     storeName = store.name;
-    storeId = store.id;
 
     const { error: profileError } = await supabase.from("profiles").insert({
       id: user.id,
@@ -85,7 +105,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           .eq("id", user.id)
           .single();
         storeName = existingProfile?.stores?.name ?? storeName;
-        storeId = existingProfile?.store_id ?? storeId;
 
         // Clean up the orphan store we just created to keep database clean
         await supabase.from("stores").delete().eq("id", store.id);
@@ -94,16 +113,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         throw profileError;
       }
     }
-  }
-
-  let creditBalance = 0;
-  if (storeId) {
-    const { data: credit } = await supabase
-      .from("store_credits")
-      .select("balance")
-      .eq("store_id", storeId)
-      .maybeSingle();
-    creditBalance = credit?.balance ?? 0;
   }
 
   return (
