@@ -14,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const supabase = createAdminClient();
   let storeName = "My Store";
+  let storeId: string | null = null;
 
   // Check if profile exists for this Clerk user. Joins the store name in the
   // same round trip since that's needed on every request too — this layout
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (profile?.stores?.name) {
     storeName = profile.stores.name;
+    storeId = profile.store_id;
   } else if (!profile) {
     // Onboard new Clerk user: create store + owner profile
     const defaultStoreName = user.firstName ? `${user.firstName}'s Store` : "My Store";
@@ -42,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
 
     storeName = store.name;
+    storeId = store.id;
 
     const { error: profileError } = await supabase.from("profiles").insert({
       id: user.id,
@@ -56,10 +59,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         // store that was just created by the concurrent request instead.
         const { data: existingProfile } = await supabase
           .from("profiles")
-          .select("stores(name)")
+          .select("store_id, stores(name)")
           .eq("id", user.id)
           .single();
         storeName = existingProfile?.stores?.name ?? storeName;
+        storeId = existingProfile?.store_id ?? storeId;
 
         // Clean up the orphan store we just created to keep database clean
         await supabase.from("stores").delete().eq("id", store.id);
@@ -70,9 +74,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
   }
 
+  let creditBalance = 0;
+  if (storeId) {
+    const { data: credit } = await supabase
+      .from("store_credits")
+      .select("balance")
+      .eq("store_id", storeId)
+      .maybeSingle();
+    creditBalance = credit?.balance ?? 0;
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
-      <TopNav storeName={storeName} email={email} />
+      <TopNav storeName={storeName} email={email} creditBalance={creditBalance} />
       <main className="flex-1">{children}</main>
     </div>
   );

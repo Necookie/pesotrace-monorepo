@@ -17,7 +17,15 @@ const NAV_ITEMS = [
   { href: "/settings", label: "Settings" },
 ];
 
-export function TopNav({ storeName, email }: { storeName: string; email: string }) {
+export function TopNav({
+  storeName,
+  email,
+  creditBalance,
+}: {
+  storeName: string;
+  email: string;
+  creditBalance: number;
+}) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -59,6 +67,18 @@ export function TopNav({ storeName, email }: { storeName: string; email: string 
         <span className="hidden rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-medium text-ink sm:inline">
           {storeName}
         </span>
+        <Link
+          href="/settings/credits"
+          className={cn(
+            "flex items-center gap-1.5 rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors",
+            creditBalance <= 0
+              ? "border-down/30 bg-down/5 text-down hover:bg-down/10"
+              : "border-hairline bg-surface-strong text-ink hover:bg-surface-soft"
+          )}
+        >
+          <span className="font-mono">{creditBalance.toLocaleString()}</span>
+          <span className="hidden sm:inline">credits</span>
+        </Link>
         <UserMenu email={email} />
       </div>
 
