@@ -5,6 +5,16 @@ export type TransactionCategory = "cash_in" | "cash_out" | "load" | "bills" | "o
 export type ProfileRole = "owner" | "manager" | "staff";
 export type CreditEntryType = "grant" | "consumption" | "adjustment" | "refund";
 export type CreditRequestStatus = "pending" | "approved" | "denied";
+export type AdminActionType =
+  | "adjust_credit"
+  | "approve_request"
+  | "deny_request"
+  | "update_store_name"
+  | "delete_store"
+  | "grant_admin"
+  | "revoke_admin";
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type FeeTier = {
   min: number;
@@ -205,9 +215,48 @@ export type Database = {
           },
         ];
       };
+      admin_audit_log: {
+        Row: {
+          id: string;
+          actor_user_id: string;
+          action: AdminActionType;
+          store_id: string | null;
+          target_summary: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_user_id: string;
+          action: AdminActionType;
+          store_id?: string | null;
+          target_summary?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_audit_log"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      log_admin_action: {
+        Args: {
+          p_actor_user_id: string;
+          p_action: AdminActionType;
+          p_store_id?: string | null;
+          p_target_summary?: string | null;
+          p_metadata?: Json;
+        };
+        Returns: Database["public"]["Tables"]["admin_audit_log"]["Row"];
+      };
       consume_credit: {
         Args: {
           p_store_id: string;
@@ -240,6 +289,7 @@ export type Database = {
       profile_role: ProfileRole;
       credit_entry_type: CreditEntryType;
       credit_request_status: CreditRequestStatus;
+      admin_action_type: AdminActionType;
     };
     CompositeTypes: Record<string, never>;
   };
