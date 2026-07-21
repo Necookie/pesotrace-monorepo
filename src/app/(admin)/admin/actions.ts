@@ -211,7 +211,7 @@ export async function deleteStore(input: { storeId: string; confirmName: string 
     return { ok: false as const, error: "Invalid input" };
   }
 
-  await requirePlatformAdmin();
+  const adminUserId = await requirePlatformAdmin();
   const supabase = createAdminClient();
 
   const { data: store, error: fetchError } = await supabase
@@ -225,6 +225,14 @@ export async function deleteStore(input: { storeId: string; confirmName: string 
     return { ok: false as const, error: "Store name did not match" };
   }
 
+  // Snapshot what the FK cascade is about to destroy — the cascade wipes
+  // credit_ledger/transactions/etc, so this is the only record left that
+  // the deletion happened and what it took with it.
+  const [{ count: transactionCount }, { data: credits }] = await Promise.all([
+    supabase.from("transactions").select("id", { count: "exact", head: true }).eq("store_id", parsed.data.storeId),
+    supabase.from("store_credits").select("balance").eq("store_id", parsed.data.storeId).maybeSingle(),
+  ]);
+
   try {
     await deleteStoreStorageFiles(supabase, parsed.data.storeId);
   } catch (e) {
@@ -234,8 +242,15 @@ export async function deleteStore(input: { storeId: string; confirmName: string 
     };
   }
 
+  await logAdminAction(supabase, adminUserId, "delete_store", parsed.data.storeId, store.name, {
+    storeName: store.name,
+    transactionCount: transactionCount ?? 0,
+    creditBalanceAtDeletion: credits?.balance ?? 0,
+  });
+
   // FK cascades (profiles, transactions, store_credits, credit_ledger,
   // credit_requests -> stores) remove everything else in one statement.
+  // The audit log row above survives it (store_id -> on delete set null).
   const { error: deleteError } = await supabase.from("stores").delete().eq("id", parsed.data.storeId);
   if (deleteError) return { ok: false as const, error: deleteError.message };
 
