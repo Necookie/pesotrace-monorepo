@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { listStoresWithCredits } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { formatExtractionCost, formatDateTime } from "@/lib/format";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
@@ -19,6 +20,9 @@ export default async function AdminOverviewPage() {
             <TableRow>
               <TableHead>Store</TableHead>
               <TableHead className="text-right">Credit balance</TableHead>
+              <TableHead className="text-right">Extractions (30d)</TableHead>
+              <TableHead className="text-right">Real cost (30d)</TableHead>
+              <TableHead className="text-right">Last activity</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -37,11 +41,20 @@ export default async function AdminOverviewPage() {
                 >
                   {store.balance.toLocaleString()}
                 </TableCell>
+                <TableCell className="text-right font-mono text-body">
+                  {store.extractionsThisMonth.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right font-mono text-body">
+                  {formatExtractionCost(store.costUsdThisMonth)}
+                </TableCell>
+                <TableCell className="text-right text-sm text-muted">
+                  {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "—"}
+                </TableCell>
               </TableRow>
             ))}
             {stores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={2} className="py-8 text-center text-muted">
+                <TableCell colSpan={5} className="py-8 text-center text-muted">
                   No stores yet.
                 </TableCell>
               </TableRow>
