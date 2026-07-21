@@ -4,6 +4,33 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { captureException } from "@/lib/monitoring-server";
+import type { AdminActionType, Json } from "@/lib/database.types";
+
+/**
+ * Best-effort audit log write — never blocks or fails the admin action it's
+ * documenting. A logging failure is itself reported so it doesn't go
+ * unnoticed, but the underlying action (already committed) still succeeds.
+ */
+async function logAdminAction(
+  supabase: ReturnType<typeof createAdminClient>,
+  actorUserId: string,
+  action: AdminActionType,
+  storeId: string | null,
+  targetSummary: string | null,
+  metadata: Json = {}
+) {
+  const { error } = await supabase.rpc("log_admin_action", {
+    p_actor_user_id: actorUserId,
+    p_action: action,
+    p_store_id: storeId,
+    p_target_summary: targetSummary,
+    p_metadata: metadata,
+  });
+  if (error) {
+    await captureException(error, actorUserId, { context: "logAdminAction", action });
+  }
+}
 
 const adjustCreditsSchema = z.object({
   storeId: z.string().uuid(),
@@ -28,6 +55,10 @@ export async function adjustStoreCredits(input: { storeId: string; delta: number
   });
 
   if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(supabase, adminUserId, "adjust_credit", parsed.data.storeId, parsed.data.note, {
+    delta: parsed.data.delta,
+  });
 
   revalidatePath(`/admin/stores/${parsed.data.storeId}`);
   revalidatePath("/admin");
@@ -100,6 +131,11 @@ export async function approveCreditRequest(input: { requestId: string; grantAmou
     .eq("id", parsed.data.requestId);
   if (updateError) return { ok: false as const, error: updateError.message };
 
+  await logAdminAction(supabase, adminUserId, "approve_request", request.store_id, null, {
+    requestId: parsed.data.requestId,
+    grantAmount: parsed.data.grantAmount,
+  });
+
   revalidatePath("/admin");
   revalidatePath(`/admin/stores/${request.store_id}`);
   return { ok: true as const };
@@ -112,13 +148,19 @@ export async function denyCreditRequest(requestId: string) {
   const adminUserId = await requirePlatformAdmin();
   const supabase = createAdminClient();
 
-  const { error } = await supabase
+  const { data: request, error } = await supabase
     .from("credit_requests")
     .update({ status: "denied", decided_by: adminUserId, decided_at: new Date().toISOString() })
     .eq("id", parsed.data)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select("store_id")
+    .single();
 
   if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(supabase, adminUserId, "deny_request", request.store_id, null, {
+    requestId: parsed.data,
+  });
 
   revalidatePath("/admin");
   return { ok: true as const };
