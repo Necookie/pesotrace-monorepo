@@ -19,14 +19,16 @@ export default async function AdminOverviewPage() {
   const totalBalance = stores.reduce((sum, s) => sum + s.balance, 0);
   const totalCost30d = stores.reduce((sum, s) => sum + s.costUsdThisMonth, 0);
   const storesOutOfCredits = stores.filter((s) => s.balance <= 0).length;
+  const requestsToday = stores.reduce((sum, s) => sum + s.requestsToday, 0);
 
   return (
     <div>
       <h1 className="text-2xl font-medium text-ink">Stores</h1>
       <p className="mt-1 text-sm text-body">Credit balances and usage across every store.</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <KpiTile label="Stores" value={String(stores.length)} />
+        <KpiTile label="Requests today" value={String(requestsToday)} />
         <KpiTile label="Total credit balance" value={totalBalance.toLocaleString()} />
         <KpiTile label="Real cost (30d)" value={formatExtractionCost(totalCost30d)} />
         <KpiTile label="Out of credits" value={String(storesOutOfCredits)} />
@@ -43,6 +45,7 @@ export default async function AdminOverviewPage() {
             <TableRow className="hover:bg-transparent">
               <TableHead className="py-3 pl-4">Store</TableHead>
               <TableHead className="py-3 text-right">Credit balance</TableHead>
+              <TableHead className="py-3 text-right">Today</TableHead>
               <TableHead className="py-3 text-right">Extractions (30d)</TableHead>
               <TableHead className="py-3 text-right">Real cost (30d)</TableHead>
               <TableHead className="py-3">Usage trend</TableHead>
@@ -72,6 +75,9 @@ export default async function AdminOverviewPage() {
                   {store.balance.toLocaleString()}
                 </TableCell>
                 <TableCell className="py-3 text-right font-mono text-body">
+                  {store.requestsToday.toLocaleString()}
+                </TableCell>
+                <TableCell className="py-3 text-right font-mono text-body">
                   {store.extractionsThisMonth.toLocaleString()}
                 </TableCell>
                 <TableCell className="py-3 text-right font-mono text-body">
@@ -90,7 +96,7 @@ export default async function AdminOverviewPage() {
             ))}
             {stores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted">
+                <TableCell colSpan={8} className="py-10 text-center text-muted">
                   No stores yet.
                 </TableCell>
               </TableRow>

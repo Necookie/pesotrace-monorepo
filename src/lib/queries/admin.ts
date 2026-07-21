@@ -139,6 +139,7 @@ export type AdminStoreRow = {
   balance: number;
   extractionsThisMonth: number;
   costUsdThisMonth: number;
+  requestsToday: number;
   lastActivityAt: string | null;
   dailyUsage: CreditUsagePoint[];
 };
@@ -172,14 +173,28 @@ export async function listStoresWithCredits(
 
   const balanceByStore = new Map((credits ?? []).map((c) => [c.store_id, c.balance]));
 
+  const todayKey = dayKey(new Date().toISOString());
+
   const usageByStore = new Map<
     string,
-    { extractions: number; costUsd: number; lastActivityAt: string; byDay: Map<string, number> }
+    {
+      extractions: number;
+      costUsd: number;
+      requestsToday: number;
+      lastActivityAt: string;
+      byDay: Map<string, number>;
+    }
   >();
   for (const entry of recentLedger ?? []) {
     let existing = usageByStore.get(entry.store_id);
     if (!existing) {
-      existing = { extractions: 0, costUsd: 0, lastActivityAt: entry.created_at, byDay: new Map() };
+      existing = {
+        extractions: 0,
+        costUsd: 0,
+        requestsToday: 0,
+        lastActivityAt: entry.created_at,
+        byDay: new Map(),
+      };
       usageByStore.set(entry.store_id, existing);
     }
     existing.extractions += 1;
@@ -187,6 +202,7 @@ export async function listStoresWithCredits(
     if (entry.created_at > existing.lastActivityAt) existing.lastActivityAt = entry.created_at;
 
     const key = dayKey(entry.created_at);
+    if (key === todayKey) existing.requestsToday += 1;
     existing.byDay.set(key, (existing.byDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
   }
 
@@ -201,6 +217,7 @@ export async function listStoresWithCredits(
     return {
       storeId: store.id,
       storeName: store.name,
+      requestsToday: usage?.requestsToday ?? 0,
       balance: balanceByStore.get(store.id) ?? 0,
       extractionsThisMonth: usage?.extractions ?? 0,
       costUsdThisMonth: usage?.costUsd ?? 0,
