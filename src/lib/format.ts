@@ -17,11 +17,19 @@ export function formatDateTime(iso: string): string {
   }).format(d);
 }
 
-/** Sub-cent USD costs need more precision than Intl.NumberFormat's currency mode allows. */
+/**
+ * Static approximate USD->PHP rate for displaying Gemini's real per-call
+ * cost in the store's own currency — not live-fetched, update if it drifts
+ * far from the market rate.
+ */
+const USD_TO_PHP_RATE = 58;
+
+/** Sub-centavo costs need more precision than Intl.NumberFormat's currency mode allows. */
 export function formatExtractionCost(usd: number): string {
-  if (usd === 0) return "$0.00";
-  if (usd < 0.01) return `$${usd.toFixed(5)}`;
-  return `$${usd.toFixed(4)}`;
+  const php = usd * USD_TO_PHP_RATE;
+  if (php === 0) return "₱0.00";
+  if (php < 0.01) return `₱${php.toFixed(5)}`;
+  return `₱${php.toFixed(4)}`;
 }
 
 /** Compact axis-tick form: ₱1.2K / ₱3.4M instead of the full ₱1,234.00. */
