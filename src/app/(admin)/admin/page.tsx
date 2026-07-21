@@ -35,51 +35,57 @@ export default async function AdminOverviewPage() {
         <TrialRequestsPanel requests={pendingRequests} />
       </div>
 
-      <div className="rounded-2xl border border-hairline">
+      <h2 className="mb-3 text-sm font-semibold text-ink">All stores</h2>
+      <div className="overflow-hidden rounded-2xl border border-hairline">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Store</TableHead>
-              <TableHead className="text-right">Credit balance</TableHead>
-              <TableHead className="text-right">Extractions (30d)</TableHead>
-              <TableHead className="text-right">Real cost (30d)</TableHead>
-              <TableHead>Usage trend</TableHead>
-              <TableHead className="text-right">Last activity</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="py-3 pl-4">Store</TableHead>
+              <TableHead className="py-3 text-right">Credit balance</TableHead>
+              <TableHead className="py-3 text-right">Extractions (30d)</TableHead>
+              <TableHead className="py-3 text-right">Real cost (30d)</TableHead>
+              <TableHead className="py-3">Usage trend</TableHead>
+              <TableHead className="py-3 pr-4 text-right">Last activity</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {stores.map((store) => (
               <TableRow key={store.storeId}>
-                <TableCell>
+                <TableCell className="py-3 pl-4">
                   <Link href={`/admin/stores/${store.storeId}`} className="font-medium text-ink hover:text-primary">
                     {store.storeName}
                   </Link>
+                  {store.balance <= 0 && (
+                    <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
+                      Out of credits
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell
                   className={cn(
-                    "text-right font-mono",
+                    "py-3 text-right font-mono",
                     store.balance <= 0 ? "text-down" : "text-ink"
                   )}
                 >
                   {store.balance.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-right font-mono text-body">
+                <TableCell className="py-3 text-right font-mono text-body">
                   {store.extractionsThisMonth.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-right font-mono text-body">
+                <TableCell className="py-3 text-right font-mono text-body">
                   {formatExtractionCost(store.costUsdThisMonth)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-3">
                   <CreditUsageChart data={store.dailyUsage} compact />
                 </TableCell>
-                <TableCell className="text-right text-sm text-muted">
+                <TableCell className="py-3 pr-4 text-right text-sm text-muted">
                   {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "—"}
                 </TableCell>
               </TableRow>
             ))}
             {stores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted">
+                <TableCell colSpan={6} className="py-10 text-center text-muted">
                   No stores yet.
                 </TableCell>
               </TableRow>
