@@ -7,6 +7,7 @@ import { reconcileStatement } from "@/lib/reconciliation";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { creditsForExtraction } from "@/lib/credits/pricing";
 import { captureException } from "@/lib/monitoring-server";
+import { notifyExtractionFailed } from "@/lib/email/notify-store";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -102,6 +103,7 @@ async function handlePost(request: Request) {
       p_output_tokens: extractionResult.cost.outputTokens,
       p_created_by: userId,
     });
+    await notifyExtractionFailed(supabase, storeId, extractionResult.error);
     return NextResponse.json(
       { error: extractionResult.error, cost: extractionResult.cost },
       { status: 422 }
