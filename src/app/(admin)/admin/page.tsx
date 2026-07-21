@@ -4,6 +4,7 @@ import { listStoresWithCredits } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
+import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
@@ -22,6 +23,7 @@ export default async function AdminOverviewPage() {
               <TableHead className="text-right">Credit balance</TableHead>
               <TableHead className="text-right">Extractions (30d)</TableHead>
               <TableHead className="text-right">Real cost (30d)</TableHead>
+              <TableHead>Usage trend</TableHead>
               <TableHead className="text-right">Last activity</TableHead>
             </TableRow>
           </TableHeader>
@@ -47,6 +49,9 @@ export default async function AdminOverviewPage() {
                 <TableCell className="text-right font-mono text-body">
                   {formatExtractionCost(store.costUsdThisMonth)}
                 </TableCell>
+                <TableCell>
+                  <CreditUsageChart data={store.dailyUsage} compact />
+                </TableCell>
                 <TableCell className="text-right text-sm text-muted">
                   {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "—"}
                 </TableCell>
@@ -54,7 +59,7 @@ export default async function AdminOverviewPage() {
             ))}
             {stores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted">
+                <TableCell colSpan={6} className="py-8 text-center text-muted">
                   No stores yet.
                 </TableCell>
               </TableRow>
