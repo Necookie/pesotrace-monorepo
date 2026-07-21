@@ -11,6 +11,7 @@ import type { ExtractionCost } from "@/lib/gemini/pricing";
 import type { FeeTierConfig } from "@/lib/schemas/fee-tier";
 import { formatExtractionCost } from "@/lib/format";
 import { confirmTransaction, deleteUploadedSource } from "./actions";
+import { trackEvent, ClientEvent } from "@/lib/analytics/events";
 
 type UploadTab = "single" | "bulk" | "statement";
 
@@ -67,6 +68,8 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
   const [tab, setTab] = useState<UploadTab>("single");
 
   async function handleFiles(files: File[]) {
+    trackEvent(ClientEvent.UploadStarted, { count: files.length });
+
     const newItems: QueueItem[] = files.map((file) => ({
       id: crypto.randomUUID(),
       file,
@@ -77,6 +80,7 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
 
     await mapWithConcurrency(newItems, BULK_EXTRACT_CONCURRENCY, async (item) => {
       const result = await extractOne(item.file);
+      trackEvent(result.extracted ? ClientEvent.ExtractionSucceeded : ClientEvent.ExtractionFailedShown);
       setQueue((prev) =>
         prev.map((q) =>
           q.id === item.id
@@ -109,6 +113,7 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
     }
 
     toast.success("Transaction saved");
+    trackEvent(ClientEvent.TransactionConfirmed);
     setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "done" } : q)));
   }
 

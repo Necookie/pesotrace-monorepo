@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { trackEvent, ClientEvent } from "@/lib/analytics/events";
 
 type Format = "csv" | "pdf";
 
@@ -25,6 +26,7 @@ export function ExportDialog() {
 
   function handleDownload() {
     if (invalidRange) return;
+    trackEvent(ClientEvent.LedgerExported, { format });
     const url = `/api/export?format=${format}&from=${from}&to=${to}`;
     window.location.assign(url);
     setOpen(false);

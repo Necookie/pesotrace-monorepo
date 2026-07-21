@@ -6,6 +6,7 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { feeTierConfigSchema, type FeeTierConfig } from "@/lib/schemas/fee-tier";
 import { storePhoneNumbersSchema, type StorePhoneNumbers } from "@/lib/schemas/store-phone";
 import { notifyNewTrialRequest } from "@/lib/email/notify-operator";
+import { trackServerEvent, ServerEvent } from "@/lib/analytics/events-server";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -105,6 +106,7 @@ export async function requestTrialCredits() {
   if (error) return { ok: false as const, error: error.message };
 
   await notifyNewTrialRequest(supabase, storeId);
+  await trackServerEvent(ServerEvent.TrialRequestCreated, userId, { storeId });
 
   revalidatePath("/settings/credits");
   return { ok: true as const };

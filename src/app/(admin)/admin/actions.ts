@@ -6,6 +6,7 @@ import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { captureException } from "@/lib/monitoring-server";
 import { notifyTrialApproved } from "@/app/(admin)/admin/notify";
+import { trackServerEvent, ServerEvent } from "@/lib/analytics/events-server";
 import type { AdminActionType, Json } from "@/lib/database.types";
 
 /**
@@ -148,6 +149,10 @@ export async function approveCreditRequest(input: { requestId: string; grantAmou
     grantAmount: parsed.data.grantAmount,
   });
   await notifyTrialApproved(supabase, request.store_id, parsed.data.grantAmount);
+  await trackServerEvent(ServerEvent.TrialRequestApproved, adminUserId, {
+    storeId: request.store_id,
+    grantAmount: parsed.data.grantAmount,
+  });
 
   revalidatePath("/admin");
   revalidatePath(`/admin/stores/${request.store_id}`);
@@ -255,6 +260,8 @@ export async function deleteStore(input: { storeId: string; confirmName: string 
   // The audit log row above survives it (store_id -> on delete set null).
   const { error: deleteError } = await supabase.from("stores").delete().eq("id", parsed.data.storeId);
   if (deleteError) return { ok: false as const, error: deleteError.message };
+
+  await trackServerEvent(ServerEvent.StoreDeleted, adminUserId, { storeName: store.name });
 
   revalidatePath("/admin");
   return { ok: true as const };

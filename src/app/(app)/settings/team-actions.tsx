@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { sendEmail } from "@/lib/email/send";
 import { StaffInviteEmail } from "@/components/email/templates/staff-invite";
+import { trackServerEvent, ServerEvent } from "@/lib/analytics/events-server";
 
 const INVITE_EXPIRY_DAYS = 7;
 
@@ -67,6 +68,7 @@ export async function createInvitation(input: { email: string; role: "manager" |
     subject: `You're invited to join ${storeName} on PesoTrace`,
     react: <StaffInviteEmail storeName={storeName} role={parsed.data.role} acceptUrl={acceptUrl} />,
   });
+  await trackServerEvent(ServerEvent.InviteSent, userId, { storeId, role: parsed.data.role });
 
   revalidatePath("/settings/team");
   return { ok: true as const };
