@@ -66,7 +66,7 @@ export function TransactionDetailSheet() {
 
   return (
     <Sheet open={!!txnId} onOpenChange={(open) => !open && close()}>
-      <SheetContent side="right" className="w-full max-w-md overflow-y-auto">
+      <SheetContent side="right" className="w-full max-w-md overflow-y-auto data-[side=right]:w-full sm:data-[side=right]:max-w-md">
         <SheetHeader>
           <SheetTitle>Transaction detail</SheetTitle>
         </SheetHeader>
