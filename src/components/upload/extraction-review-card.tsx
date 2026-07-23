@@ -114,7 +114,7 @@ export function ExtractionReviewCard({
             <Label>Direction</Label>
             <select
               {...form.register("direction")}
-              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm"
+              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm md:h-8"
             >
               <option value="send">Send</option>
               <option value="receive">Receive</option>
@@ -124,7 +124,7 @@ export function ExtractionReviewCard({
             <Label>Category</Label>
             <select
               {...form.register("category")}
-              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm"
+              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm md:h-8"
             >
               {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>

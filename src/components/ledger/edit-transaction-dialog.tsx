@@ -88,7 +88,7 @@ export function EditTransactionDialog({
               <select
                 id="direction"
                 {...register("direction")}
-                className="w-full rounded-xl border border-hairline bg-canvas p-2.5 text-sm text-ink outline-none"
+                className="h-10 w-full rounded-xl border border-hairline bg-canvas px-2.5 text-sm text-ink outline-none md:h-8"
               >
                 <option value="send">Send (Out)</option>
                 <option value="receive">Receive (In)</option>
@@ -99,7 +99,7 @@ export function EditTransactionDialog({
               <select
                 id="category"
                 {...register("category")}
-                className="w-full rounded-xl border border-hairline bg-canvas p-2.5 text-sm text-ink outline-none"
+                className="h-10 w-full rounded-xl border border-hairline bg-canvas px-2.5 text-sm text-ink outline-none md:h-8"
               >
                 {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -161,7 +161,7 @@ export function EditTransactionDialog({
             <select
               id="status"
               {...register("status")}
-              className="w-full rounded-xl border border-hairline bg-canvas p-2.5 text-sm text-ink outline-none"
+              className="h-10 w-full rounded-xl border border-hairline bg-canvas px-2.5 text-sm text-ink outline-none md:h-8"
             >
               <option value="needs_review">Needs Review</option>
               <option value="confirmed">Confirmed</option>

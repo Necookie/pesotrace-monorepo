@@ -116,7 +116,7 @@ function MemberRow({
             value={member.role}
             onChange={(e) => handleRoleChange(e.target.value as "staff" | "manager")}
             disabled={busy}
-            className="h-8 rounded-md border border-hairline bg-canvas px-2 text-xs"
+            className="h-10 rounded-md border border-hairline bg-canvas px-2 text-xs md:h-8"
           >
             <option value="staff">Staff</option>
             <option value="manager">Manager</option>
@@ -203,7 +203,7 @@ function InviteForm({ canInviteManagers }: { canInviteManagers: boolean }) {
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "staff" | "manager")}
-            className={cn("h-10 w-full rounded-md border border-hairline bg-canvas px-2 text-sm")}
+            className={cn("h-10 w-full rounded-md border border-hairline bg-canvas px-2 text-sm md:h-8")}
           >
             <option value="staff">Staff</option>
             {canInviteManagers && <option value="manager">Manager</option>}

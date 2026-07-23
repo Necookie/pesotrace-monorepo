@@ -79,7 +79,7 @@ export function FeeTierTable({ initial }: { initial: FeeTierConfig }) {
                   onChange={(e) =>
                     updateTier(i, { type: e.target.value as "flat" | "per_thousand" })
                   }
-                  className="h-10 w-full rounded-md border border-hairline bg-canvas px-2 text-sm"
+                  className="h-10 w-full rounded-md border border-hairline bg-canvas px-2 text-sm md:h-8"
                 >
                   <option value="flat">Flat fee</option>
                   <option value="per_thousand">₱ per ₱1,000</option>
