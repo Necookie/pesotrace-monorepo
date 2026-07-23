@@ -79,7 +79,7 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
             <select
               value={grouping}
               onChange={(e) => setGrouping(e.target.value as GroupPeriod)}
-              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm"
+              className="h-10 w-full rounded-md border border-hairline bg-canvas px-3 text-sm md:h-8"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -95,7 +95,7 @@ export function ReportBuilder({ rows }: { rows: Row[] }) {
                   type="button"
                   onClick={() => setFormat(f)}
                   className={cn(
-                    "rounded-pill px-4 py-1.5 text-sm font-medium uppercase transition-colors",
+                    "min-h-11 rounded-pill px-4 text-sm font-medium uppercase transition-colors md:min-h-0 md:py-1.5",
                     format === f ? "bg-canvas text-ink shadow-sm" : "text-body"
                   )}
                 >
