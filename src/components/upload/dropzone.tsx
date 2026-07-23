@@ -18,6 +18,7 @@ export function Dropzone({
   kind?: keyof typeof PRESETS;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const preset = PRESETS[kind];
 
@@ -51,9 +52,22 @@ export function Dropzone({
     >
       <p className="text-sm font-medium text-ink">Drop {noun} here</p>
       <p className="text-xs text-muted">{preset.label}</p>
-      <span className="mt-2 rounded-pill bg-surface-strong px-4 py-1.5 text-sm font-medium text-ink">
-        Browse files
-      </span>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="rounded-pill bg-surface-strong px-4 py-1.5 text-sm font-medium text-ink">
+          Browse files
+        </span>
+        {kind === "image" && (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              cameraInputRef.current?.click();
+            }}
+            className="rounded-pill bg-surface-strong px-4 py-1.5 text-sm font-medium text-ink md:hidden"
+          >
+            Take photo
+          </span>
+        )}
+      </div>
       <input
         ref={inputRef}
         type="file"
@@ -62,6 +76,16 @@ export function Dropzone({
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
+      {kind === "image" && (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept={preset.accept}
+          capture="environment"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      )}
     </div>
   );
 }
