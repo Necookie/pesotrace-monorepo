@@ -92,7 +92,9 @@ export default async function AdminStoreDetailPage({
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-ink">Ledger history</h2>
-        <div className="overflow-hidden rounded-2xl border border-hairline">
+
+        {/* Desktop: table */}
+        <div className="hidden overflow-hidden rounded-2xl border border-hairline md:block">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -146,6 +148,47 @@ export default async function AdminStoreDetailPage({
             </TableBody>
           </Table>
         </div>
+
+        {/* Mobile: stacked cards */}
+        <div className="flex flex-col gap-3 md:hidden">
+          {detail.ledger.map((entry) => (
+            <div key={entry.id} className="rounded-2xl border border-hairline p-4">
+              <div className="flex items-start justify-between gap-2">
+                <span
+                  className={cn(
+                    "inline-block rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
+                    ENTRY_TYPE_TEXT_COLOR[entry.entryType] ?? "text-ink"
+                  )}
+                >
+                  {ENTRY_TYPE_LABEL[entry.entryType] ?? entry.entryType}
+                </span>
+                <span
+                  className={cn(
+                    "font-mono text-sm",
+                    entry.creditDelta < 0 ? "text-down" : entry.creditDelta > 0 ? "text-up" : "text-muted"
+                  )}
+                >
+                  {entry.creditDelta > 0 ? "+" : ""}
+                  {entry.creditDelta.toLocaleString()}
+                </span>
+              </div>
+              {entry.note && <p className="mt-2 text-sm text-body">{entry.note}</p>}
+              <div className="mt-2 flex items-center justify-between text-xs text-muted">
+                <span>{entry.createdBy ?? "—"}</span>
+                <span>{formatDateTime(entry.createdAt)}</span>
+              </div>
+              {entry.costUsd > 0 && (
+                <p className="mt-1 font-mono text-xs text-muted">Real cost {formatExtractionCost(entry.costUsd)}</p>
+              )}
+            </div>
+          ))}
+          {detail.ledger.length === 0 && (
+            <div className="rounded-2xl border border-hairline py-10 text-center text-muted">
+              No credit activity yet.
+            </div>
+          )}
+        </div>
+
         {detail.ledgerHasMore && (
           <div className="mt-4 flex justify-center">
             <Link
