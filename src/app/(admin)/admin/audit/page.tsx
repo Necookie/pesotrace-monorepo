@@ -35,7 +35,8 @@ export default async function AdminAuditLogPage() {
       <h1 className="text-2xl font-medium text-ink">Audit log</h1>
       <p className="mt-1 text-sm text-body">Every platform-admin action, most recent first.</p>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-hairline">
+      {/* Desktop: table */}
+      <div className="mt-6 hidden overflow-hidden rounded-2xl border border-hairline md:block">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -84,6 +85,41 @@ export default async function AdminAuditLogPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile: stacked cards */}
+      <div className="mt-6 flex flex-col gap-3 md:hidden">
+        {entries.map((entry) => (
+          <div key={entry.id} className="rounded-2xl border border-hairline p-4">
+            <div className="flex items-start justify-between gap-2">
+              <span
+                className={cn(
+                  "inline-block rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
+                  ACTION_TEXT_COLOR[entry.action]
+                )}
+              >
+                {ACTION_LABEL[entry.action]}
+              </span>
+              <span className="shrink-0 text-xs text-muted">{formatDateTime(entry.createdAt)}</span>
+            </div>
+            <p className="mt-2 text-sm text-ink">
+              {entry.storeId ? (
+                <Link href={`/admin/stores/${entry.storeId}`} className="hover:text-primary">
+                  {entry.storeName}
+                </Link>
+              ) : (
+                (entry.storeName ?? "—")
+              )}
+            </p>
+            {entry.targetSummary && <p className="mt-1 text-sm text-body">{entry.targetSummary}</p>}
+            <p className="mt-2 text-xs text-muted">{entry.actorUserId}</p>
+          </div>
+        ))}
+        {entries.length === 0 && (
+          <div className="rounded-2xl border border-hairline py-10 text-center text-muted">
+            No admin actions logged yet.
+          </div>
+        )}
       </div>
     </div>
   );
