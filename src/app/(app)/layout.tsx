@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TopNav } from "@/components/layout/top-nav";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { findPendingInvitationByEmail, acceptInvitation } from "@/lib/invitations/accept";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -118,7 +119,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
       <TopNav storeName={storeName} email={email} creditBalance={creditBalance} />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-16 md:pb-0">{children}</main>
+      <BottomNav />
     </div>
   );
 }
