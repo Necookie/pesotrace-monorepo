@@ -100,7 +100,8 @@ export function StatementImport() {
             </span>
           </div>
 
-          <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-2xl border border-hairline">
+          {/* Desktop: table */}
+          <div className="hidden max-h-96 overflow-x-auto overflow-y-auto rounded-2xl border border-hairline md:block">
             <table className="w-full min-w-[480px] text-sm">
               <thead className="sticky top-0 bg-canvas">
                 <tr className="border-b border-hairline text-left text-xs text-muted">
@@ -140,6 +141,35 @@ export function StatementImport() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile: stacked cards */}
+          <div className="flex max-h-96 flex-col gap-2 overflow-y-auto md:hidden">
+            {parsed.rows.map((row, i) => {
+              const { direction, amount } = statementRowToTransaction(row);
+              const mismatch = parsed.reconciliation[i]?.mismatch;
+              return (
+                <div
+                  key={row.ref_number + i}
+                  className={cn(
+                    "rounded-xl border border-hairline p-3",
+                    mismatch && "bg-surface-soft"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <CategoryBadge category={row.category} />
+                    <Amount value={amount} direction={direction} />
+                  </div>
+                  <p className="mt-1.5 truncate text-xs text-body" title={row.description}>
+                    {row.description}
+                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-xs text-muted">
+                    <span>{formatDateTime(row.occurred_at)}</span>
+                    {mismatch && <span className="text-down">Balance mismatch</span>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex gap-2">
