@@ -16,7 +16,7 @@ export function StoreRowDeleteButton({ storeId, storeName }: { storeId: string; 
         <button
           type="button"
           aria-label={`Delete ${storeName}`}
-          className="flex size-7 items-center justify-center rounded-pill text-muted hover:bg-down/10 hover:text-down"
+          className="flex size-11 items-center justify-center rounded-pill text-muted hover:bg-down/10 hover:text-down"
         >
           <Trash2 className="size-4" />
         </button>

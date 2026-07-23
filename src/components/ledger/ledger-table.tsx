@@ -155,7 +155,7 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
                             e.stopPropagation();
                             e.preventDefault();
                           }}
-                          className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-surface-strong hover:text-ink transition-colors outline-none"
+                          className="flex size-11 items-center justify-center rounded-full text-muted hover:bg-surface-strong hover:text-ink transition-colors outline-none"
                         >
                           <MoreVertical className="size-4" />
                         </DropdownMenuTrigger>

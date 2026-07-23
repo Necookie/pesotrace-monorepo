@@ -59,7 +59,7 @@ export function StorePhoneNumbersForm({ initial }: { initial: StorePhoneNumbers 
             <button
               type="button"
               onClick={() => removeNumber(i)}
-              className="flex size-8 shrink-0 items-center justify-center rounded-pill text-muted hover:bg-surface-strong hover:text-down"
+              className="flex size-11 shrink-0 items-center justify-center rounded-pill text-muted hover:bg-surface-strong hover:text-down"
               aria-label="Remove number"
             >
               <X className="size-4" />
