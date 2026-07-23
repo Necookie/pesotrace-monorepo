@@ -53,7 +53,7 @@ export function TopNav({
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
-        <span className="hidden rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-medium text-ink sm:inline">
+        <span className="max-w-24 truncate rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-medium text-ink sm:max-w-none">
           {storeName}
         </span>
         <Link
