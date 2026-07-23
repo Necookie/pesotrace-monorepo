@@ -39,7 +39,9 @@ export default async function AdminOverviewPage() {
       </div>
 
       <h2 className="mb-3 text-sm font-semibold text-ink">All stores</h2>
-      <div className="overflow-hidden rounded-2xl border border-hairline">
+
+      {/* Desktop: table */}
+      <div className="hidden overflow-hidden rounded-2xl border border-hairline md:block">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -103,6 +105,61 @@ export default async function AdminOverviewPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile: stacked cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {stores.map((store) => (
+          <div key={store.storeId} className="rounded-2xl border border-hairline p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <Link
+                  href={`/admin/stores/${store.storeId}`}
+                  className="font-medium text-ink hover:text-primary"
+                >
+                  {store.storeName}
+                </Link>
+                {store.balance <= 0 && (
+                  <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
+                    Out of credits
+                  </span>
+                )}
+              </div>
+              <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted">Balance</p>
+                <p className={cn("font-mono text-sm", store.balance <= 0 ? "text-down" : "text-ink")}>
+                  {store.balance.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Today</p>
+                <p className="font-mono text-sm text-ink">{store.requestsToday.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Extractions (30d)</p>
+                <p className="font-mono text-sm text-ink">{store.extractionsThisMonth.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Real cost (30d)</p>
+                <p className="font-mono text-sm text-ink">{formatExtractionCost(store.costUsdThisMonth)}</p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <CreditUsageChart data={store.dailyUsage} compact />
+              <p className="text-xs text-muted">
+                {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "No activity yet"}
+              </p>
+            </div>
+          </div>
+        ))}
+        {stores.length === 0 && (
+          <div className="rounded-2xl border border-hairline py-10 text-center text-muted">No stores yet.</div>
+        )}
       </div>
     </div>
   );
