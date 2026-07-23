@@ -127,8 +127,6 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
   }
 
   const pendingReview = queue.filter((q) => q.status === "ready");
-  const extracting = queue.filter((q) => q.status === "extracting");
-  const errors = queue.filter((q) => q.status === "error");
   const batchCostUsd = queue.reduce((sum, q) => sum + (q.cost?.costUsd ?? 0), 0);
   const processedCount = queue.filter((q) => q.cost).length;
 
@@ -181,22 +179,43 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
         </div>
       )}
 
-      {extracting.length > 0 && (
-        <p className="text-sm text-muted">
-          Extracting {extracting.length} image{extracting.length > 1 ? "s" : ""}...
-        </p>
-      )}
-
-      {errors.length > 0 && (
+      {queue.length > 1 && (
         <div className="space-y-2">
-          {errors.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-2xl border border-hairline bg-surface-soft p-4 text-sm text-down"
-            >
-              {item.file.name}: {item.error}
-            </div>
-          ))}
+          {queue
+            .filter((item) => item.status !== "done" && item.id !== pendingReview[0]?.id)
+            .map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center gap-3 rounded-xl border border-hairline p-3"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={item.previewUrl}
+                  alt={item.file.name}
+                  className="size-12 shrink-0 rounded-lg border border-hairline object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-ink">{item.file.name}</p>
+                  {item.status === "error" && (
+                    <p className="truncate text-xs text-down">{item.error}</p>
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
+                    item.status === "extracting" && "text-muted",
+                    item.status === "ready" && "text-up",
+                    item.status === "error" && "text-down"
+                  )}
+                >
+                  {item.status === "extracting"
+                    ? "Extracting..."
+                    : item.status === "ready"
+                      ? "Ready"
+                      : "Failed"}
+                </span>
+              </div>
+            ))}
         </div>
       )}
 
@@ -215,11 +234,6 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
               onSkip={() => handleSkip(item)}
             />
           ))}
-          {pendingReview.length > 1 && (
-            <p className="text-sm text-muted">
-              {pendingReview.length - 1} more waiting for review...
-            </p>
-          )}
         </div>
       )}
     </div>
