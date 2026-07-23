@@ -82,7 +82,7 @@ export function EditTransactionDialog({
           <DialogTitle>Edit Transaction</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="direction">Direction</Label>
               <select
@@ -110,7 +110,7 @@ export function EditTransactionDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="amount">Amount (₱)</Label>
               <Input
@@ -145,7 +145,7 @@ export function EditTransactionDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="counterparty_name">Counterparty Name</Label>
               <Input id="counterparty_name" {...register("counterparty_name")} />
