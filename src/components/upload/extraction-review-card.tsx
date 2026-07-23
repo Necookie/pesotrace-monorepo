@@ -109,7 +109,7 @@ export function ExtractionReviewCard({
         })}
         className="flex flex-col gap-3"
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="space-y-1.5">
             <Label>Direction</Label>
             <select
@@ -142,7 +142,7 @@ export function ExtractionReviewCard({
           <Label>Reference No.</Label>
           <Input {...form.register("ref_number")} />
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Counterparty name</Label>
             <Input {...form.register("counterparty_name")} />
@@ -198,7 +198,9 @@ export function ExtractionReviewCard({
           />
         </div>
 
-        <div className="mt-2 flex gap-2">
+        <div
+          className="sticky bottom-0 -mx-4 mt-2 flex gap-2 border-t border-hairline bg-canvas px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-0 sm:pb-0"
+        >
           <Button type="submit" disabled={submitting} className="flex-1">
             {submitting ? "Saving..." : "Confirm"}
           </Button>
