@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeFee, matchTier } from "./fees";
+import { computeFee, matchTier, resolveFee } from "./fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "./schemas/fee-tier";
 
 describe("computeFee", () => {
@@ -83,5 +83,82 @@ describe("matchTier", () => {
   it("returns the same tier computeFee bills, at a boundary", () => {
     expect(matchTier(500, board)).toEqual(board[1]);
     expect(matchTier(200, board)).toEqual(board[0]);
+  });
+});
+
+describe("resolveFee", () => {
+  const tiers = [
+    { min: 0, max: 1000, type: "flat" as const, fee: 20 },
+    { min: 1001, max: null, type: "flat" as const, fee: 50 },
+  ];
+
+  const context = (amount: number) => ({
+    amount,
+    direction: "send" as const,
+    category: "cash_out" as const,
+  });
+
+  it("uses the tier table when no formula is set", () => {
+    expect(resolveFee(context(500), { tiers })).toEqual({ fee: 20, source: "tiers" });
+    expect(resolveFee(context(500), { tiers, formula: null })).toEqual({
+      fee: 20,
+      source: "tiers",
+    });
+    // Whitespace-only is treated as unset, not as a syntax error.
+    expect(resolveFee(context(500), { tiers, formula: "   " })).toEqual({
+      fee: 20,
+      source: "tiers",
+    });
+  });
+
+  it("prefers the formula over the tiers when one is set", () => {
+    const result = resolveFee(context(1500), {
+      tiers,
+      formula: "20 + ceil((amount - 1000) / 500) * 10",
+    });
+    expect(result).toEqual({ fee: 30, source: "formula" });
+  });
+
+  it("passes direction and category through to the formula", () => {
+    const formula = 'direction == "receive" ? 5 : category == "bills" ? 8 : 12';
+    expect(
+      resolveFee({ amount: 100, direction: "receive", category: "other" }, { tiers, formula }).fee
+    ).toBe(5);
+    expect(
+      resolveFee({ amount: 100, direction: "send", category: "bills" }, { tiers, formula }).fee
+    ).toBe(8);
+    expect(
+      resolveFee({ amount: 100, direction: "send", category: "other" }, { tiers, formula }).fee
+    ).toBe(12);
+  });
+
+  it("falls back to the tiers and reports the error when a formula throws", () => {
+    const result = resolveFee(context(500), { tiers, formula: "10 / (amount - 500)" });
+    expect(result.source).toBe("tiers");
+    expect(result.fee).toBe(20);
+    expect(result.formulaError).toMatch(/Division by zero/);
+  });
+
+  it("falls back rather than charging zero when a formula is malformed", () => {
+    const result = resolveFee(context(500), { tiers, formula: "amount +" });
+    expect(result.source).toBe("tiers");
+    expect(result.fee).toBe(20);
+    expect(result.formulaError).toBeTruthy();
+  });
+
+  it("falls back when a formula produces a negative fee", () => {
+    const result = resolveFee(context(500), { tiers, formula: "amount - 10000" });
+    expect(result.source).toBe("tiers");
+    expect(result.fee).toBe(20);
+    expect(result.formulaError).toMatch(/negative/);
+  });
+
+  it("returns consistent results across repeated calls with the same formula", () => {
+    // Exercises the AST cache — a bulk import hits this path once per row.
+    const formula = "amount <= 500 ? 15 : 25";
+    for (let i = 0; i < 5; i++) {
+      expect(resolveFee(context(100), { tiers, formula }).fee).toBe(15);
+      expect(resolveFee(context(900), { tiers, formula }).fee).toBe(25);
+    }
   });
 });

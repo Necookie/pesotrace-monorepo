@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { statementRowSchema, statementRowToTransaction, type StatementRow } from "@/lib/schemas/statement";
 import { reconcileStatement } from "@/lib/reconciliation";
-import { computeFee } from "@/lib/fees";
+import { resolveFee } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
 import { auth } from "@clerk/nextjs/server";
@@ -29,10 +29,14 @@ export async function confirmStatementImport(rows: StatementRow[], sourceFileUrl
 
   const { data: store } = await supabase
     .from("stores")
-    .select("fee_tier_config")
+    .select("fee_tier_config, fee_formula")
     .eq("id", storeId)
     .single();
   const feeTierConfig = store?.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG;
+  const feeConfig = { tiers: feeTierConfig, formula: store?.fee_formula };
+  // A formula that fails does so identically for every row — log it once
+  // rather than once per imported transaction.
+  let loggedFormulaError = false;
 
   const reconciliation = reconcileStatement(rows);
 
@@ -41,6 +45,18 @@ export async function confirmStatementImport(rows: StatementRow[], sourceFileUrl
     // A balance mismatch means this row (or a neighbor) may be mis-parsed —
     // flag it for manual review instead of trusting it silently.
     const status = reconciliation[i]?.mismatch ? "needs_review" : "confirmed";
+
+    const resolvedFee = resolveFee(
+      { amount, direction, category: row.category },
+      feeConfig
+    );
+    if (resolvedFee.formulaError && !loggedFormulaError) {
+      console.error(
+        "Fee formula failed during statement import, billed from tiers instead:",
+        resolvedFee.formulaError
+      );
+      loggedFormulaError = true;
+    }
 
     return {
       store_id: storeId,
@@ -52,7 +68,7 @@ export async function confirmStatementImport(rows: StatementRow[], sourceFileUrl
       counterparty_number: row.counterparty_number ?? null,
       occurred_at: row.occurred_at,
       status: status as "needs_review" | "confirmed",
-      fee_computed: computeFee(amount, feeTierConfig),
+      fee_computed: resolvedFee.fee,
       source_type: "statement" as const,
       source_file_url: sourceFileUrl,
       confidence: null,

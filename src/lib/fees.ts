@@ -1,4 +1,11 @@
 import type { FeeTierConfig, FeeTier } from "@/lib/schemas/fee-tier";
+import {
+  parseFormula,
+  evaluateFormula,
+  FormulaError,
+  type Node,
+  type FormulaContext,
+} from "@/lib/fee-formula";
 
 /**
  * Finds the tier that applies to `amount`.
@@ -32,10 +39,12 @@ export function describeTier(tier: FeeTier): string {
 
 /**
  * Computes the remittance fee for a given amount against a store's tier
- * config. Tiers are matched by `amount` falling within [min, max) (max=null
- * means unbounded). `per_thousand` rounds up to the nearest ₱1,000 bracket
- * before multiplying, matching how remittance shops quote fees in practice
- * (e.g. ₱20 per ₱1,000 charges ₱40 for a ₱1,500 transaction, not ₱30).
+ * config. Tiers are matched by matchTier (max inclusive, null = unbounded).
+ * `per_thousand` rounds up to the nearest ₱1,000 bracket before multiplying,
+ * matching how remittance shops quote fees in practice (e.g. ₱20 per ₱1,000
+ * charges ₱40 for a ₱1,500 transaction, not ₱30).
+ *
+ * Stores with a custom formula should go through resolveFee instead.
  */
 export function computeFee(amount: number, feeTierConfig: FeeTierConfig): number {
   // Shares matchTier's resolution so the fee charged can never disagree with
@@ -51,4 +60,73 @@ export function computeFee(amount: number, feeTierConfig: FeeTierConfig): number
 
   const brackets = Math.ceil(amount / 1000);
   return brackets * tier.fee;
+}
+
+// A bulk statement import calls resolveFee once per row against the same
+// formula, so parse each distinct source once instead of per transaction.
+// Bounded so a pathological set of formulas can't grow it without limit.
+const AST_CACHE_LIMIT = 32;
+const astCache = new Map<string, Node>();
+
+function parseCached(source: string): Node {
+  const hit = astCache.get(source);
+  if (hit) return hit;
+
+  const ast = parseFormula(source);
+  if (astCache.size >= AST_CACHE_LIMIT) {
+    astCache.delete(astCache.keys().next().value as string);
+  }
+  astCache.set(source, ast);
+  return ast;
+}
+
+export type FeeSource = "formula" | "tiers";
+
+export type FeeResolution = {
+  fee: number;
+  source: FeeSource;
+  /**
+   * Set when a formula was configured but could not be billed, so the fee
+   * below came from the tier table instead. Callers should surface this and
+   * flag the transaction rather than treating it as a normal result.
+   */
+  formulaError?: string;
+};
+
+export type StoreFeeConfig = {
+  tiers: FeeTierConfig;
+  formula?: string | null;
+};
+
+/**
+ * The single entry point for "what does this store charge for this
+ * transaction". A custom formula wins when present; otherwise the tier table
+ * applies.
+ *
+ * A formula that throws at runtime falls back to the tiers and reports the
+ * error — it never charges ₱0 and never blocks the transaction. Formulas are
+ * validated on save, so this path should be unreachable in practice, but the
+ * consequence of being wrong here is a mischarged customer, so it degrades
+ * instead of trusting.
+ */
+export function resolveFee(
+  context: FormulaContext,
+  config: StoreFeeConfig
+): FeeResolution {
+  const formula = config.formula?.trim();
+
+  if (formula) {
+    try {
+      return { fee: evaluateFormula(parseCached(formula), context), source: "formula" };
+    } catch (error) {
+      return {
+        fee: computeFee(context.amount, config.tiers),
+        source: "tiers",
+        formulaError:
+          error instanceof FormulaError ? error.message : "Fee formula failed to evaluate",
+      };
+    }
+  }
+
+  return { fee: computeFee(context.amount, config.tiers), source: "tiers" };
 }

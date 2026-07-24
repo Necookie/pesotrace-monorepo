@@ -8,7 +8,7 @@ import {
   deriveStatus,
   type TransactionConfirmInput,
 } from "@/lib/schemas/transaction";
-import { computeFee } from "@/lib/fees";
+import { resolveFee } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
 import { auth } from "@clerk/nextjs/server";
@@ -33,14 +33,28 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
 
   const { data: store } = await supabase
     .from("stores")
-    .select("fee_tier_config")
+    .select("fee_tier_config, fee_formula")
     .eq("id", storeId)
     .single();
 
   const feeTierConfig = store?.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG;
   // A fee the user picked or typed in wins over the auto-computed tier match
   // — never silently overridden once they've made a choice.
-  const fee = parsed.data.fee ?? computeFee(parsed.data.amount, feeTierConfig);
+  let fee = parsed.data.fee;
+  if (fee === undefined || fee === null) {
+    const resolved = resolveFee(
+      {
+        amount: parsed.data.amount,
+        direction: parsed.data.direction,
+        category: parsed.data.category,
+      },
+      { tiers: feeTierConfig, formula: store?.fee_formula }
+    );
+    if (resolved.formulaError) {
+      console.error("Fee formula failed, billed from tiers instead:", resolved.formulaError);
+    }
+    fee = resolved.fee;
+  }
   const status = deriveStatus(parsed.data.confidence);
 
   const { error } = await supabase.from("transactions").insert({
