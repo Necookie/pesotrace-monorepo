@@ -7,6 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { captureException } from "@/lib/monitoring-server";
 import { notifyTrialApproved } from "@/app/(admin)/admin/notify";
 import { trackServerEvent, ServerEvent } from "@/lib/analytics/events-server";
+import { feeTierConfigSchema, type FeeTierConfig } from "@/lib/schemas/fee-tier";
+import { validateFormula } from "@/lib/fee-formula-validate";
 import type { AdminActionType, Json } from "@/lib/database.types";
 
 /**
@@ -101,6 +103,76 @@ export async function updateStoreName(input: { storeId: string; name: string }) 
 
   revalidatePath(`/admin/stores/${parsed.data.storeId}`);
   revalidatePath("/admin");
+  return { ok: true as const };
+}
+
+const updateStoreFeeConfigSchema = z.object({
+  storeId: z.string().uuid(),
+  tiers: feeTierConfigSchema,
+  formula: z.string().nullable(),
+});
+
+/**
+ * Lets a platform admin fix a store's fee setup on the owner's behalf — the
+ * store owners are non-technical, and a wrong fee schedule costs them money
+ * on every transaction until someone corrects it.
+ *
+ * Runs the same formula validation the store-side action does, so support
+ * cannot save a rule the owner would have been blocked from saving. Always
+ * audit-logged with the previous config, since this is one account changing
+ * another's pricing.
+ */
+export async function updateStoreFeeConfig(input: {
+  storeId: string;
+  tiers: FeeTierConfig;
+  formula: string | null;
+}) {
+  const parsed = updateStoreFeeConfigSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const trimmed = parsed.data.formula?.trim() ?? "";
+  const formula = trimmed === "" ? null : trimmed;
+
+  if (formula !== null) {
+    const validation = validateFormula(formula);
+    if (!validation.ok) {
+      return { ok: false as const, error: validation.error };
+    }
+  }
+
+  const adminUserId = await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const { data: previous } = await supabase
+    .from("stores")
+    .select("fee_tier_config, fee_formula")
+    .eq("id", parsed.data.storeId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("stores")
+    .update({ fee_tier_config: parsed.data.tiers, fee_formula: formula })
+    .eq("id", parsed.data.storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(
+    supabase,
+    adminUserId,
+    "update_fee_tiers",
+    parsed.data.storeId,
+    formula ? "Set custom fee formula" : `${parsed.data.tiers.length} fee tier(s)`,
+    {
+      previousTiers: previous?.fee_tier_config ?? null,
+      previousFormula: previous?.fee_formula ?? null,
+      newTiers: parsed.data.tiers,
+      newFormula: formula,
+    } as Json
+  );
+
+  revalidatePath(`/admin/stores/${parsed.data.storeId}`);
   return { ok: true as const };
 }
 
