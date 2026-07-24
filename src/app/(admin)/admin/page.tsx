@@ -4,7 +4,7 @@ import { listStoresWithCredits, listPendingCreditRequests } from "@/lib/queries/
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
-import { CreditUsageChart } from "@/components/charts/credit-usage-chart";
+import { CreditUsageChart } from "@/components/charts/lazy";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";

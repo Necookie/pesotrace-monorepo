@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { Database, TransactionCategory } from "@/lib/database.types";
 import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
-import { SendReceiveChart } from "@/components/charts/send-receive-chart";
-import { CategoryBreakdownChart } from "@/components/charts/category-breakdown-chart";
+import { SendReceiveChart, CategoryBreakdownChart } from "@/components/charts/lazy";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
