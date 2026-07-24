@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { TopNav } from "@/components/layout/top-nav";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { findPendingInvitationByEmail, acceptInvitation } from "@/lib/invitations/accept";
+import { getStoreContext } from "@/lib/queries/store-context";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // auth() reads the already-verified session locally (no network call).
@@ -19,16 +20,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const supabase = createAdminClient();
 
-  const [user, profileResult] = await Promise.all([
-    currentUser(),
-    // Embeds store_credits in the same round trip as the profile/store
-    // lookup — this used to be a separate sequential query below.
-    supabase
-      .from("profiles")
-      .select("store_id, stores(name, store_credits(balance))")
-      .eq("id", userId)
-      .maybeSingle(),
-  ]);
+  // getStoreContext() is request-cached and shared with every page/action's
+  // getCurrentStoreId(), so the nav's store name + credit balance and the
+  // page's store id come from one profiles round trip instead of two.
+  const [user, context] = await Promise.all([currentUser(), getStoreContext()]);
 
   if (!user) {
     redirect("/login");
@@ -38,27 +33,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const fullName = user.fullName ?? "";
 
   let storeName = "My Store";
-  let creditBalance = 0;
-
-  const { data: profile } = profileResult;
-  // store_credits.store_id is a 1:1 PK relationship. PostgREST confirmed
-  // (verified against the live API) it returns this embed as a single
-  // object, but supabase-js's generic inference — given this hand-written
-  // Database type's Relationships metadata — types it as an array. Cast
-  // rather than index, since indexing [0] would silently break this.
-  const embeddedCredit = profile?.stores?.store_credits as unknown as { balance: number } | null | undefined;
-  if (embeddedCredit) {
-    creditBalance = embeddedCredit.balance;
-  }
+  const creditBalance = context.creditBalance;
+  const hasProfile = context.storeId !== null;
 
   // A pending invite for this email takes priority over the normal
   // create-my-own-store onboarding below — join the store they were invited
   // to instead of minting a brand new one, even if they arrived via a plain
   // sign-up rather than the /invite/[token] link.
-  const pendingInvitation = !profile && email ? await findPendingInvitationByEmail(supabase, email) : null;
+  const pendingInvitation = !hasProfile && email ? await findPendingInvitationByEmail(supabase, email) : null;
 
-  if (profile?.stores?.name) {
-    storeName = profile.stores.name;
+  if (context.storeName) {
+    storeName = context.storeName;
   } else if (pendingInvitation) {
     const result = await acceptInvitation(supabase, pendingInvitation, user.id, fullName);
 
@@ -73,7 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       console.error("Failed to auto-accept invitation on sign-up:", result.error);
       throw new Error(result.error);
     }
-  } else if (!profile) {
+  } else if (!hasProfile) {
     // Onboard new Clerk user: create store + owner profile
     const defaultStoreName = user.firstName ? `${user.firstName}'s Store` : "My Store";
     const { data: store, error: storeError } = await supabase

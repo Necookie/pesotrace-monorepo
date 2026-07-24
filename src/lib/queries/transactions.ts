@@ -53,17 +53,11 @@ export async function listTransactions(
   return paginateRows(data ?? [], limit);
 }
 
-import { auth } from "@clerk/nextjs/server";
+import { getStoreContext } from "@/lib/queries/store-context";
 
-export async function getCurrentStoreId(supabase: SupabaseClient<Database>) {
-  const { userId } = await auth();
-  if (!userId) return null;
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("store_id")
-    .eq("id", userId)
-    .single();
-
-  return data?.store_id ?? null;
+// Delegates to the request-cached store context, so the ~20 call sites here
+// plus the (app) layout's nav lookup all collapse into a single profiles
+// round trip per request instead of one each.
+export async function getCurrentStoreId() {
+  return (await getStoreContext()).storeId;
 }

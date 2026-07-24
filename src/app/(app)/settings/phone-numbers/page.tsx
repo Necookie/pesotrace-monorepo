@@ -4,7 +4,7 @@ import { StorePhoneNumbersForm } from "@/components/settings/store-phone-numbers
 
 export default async function PhoneNumbersPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   let numbers: string[] = [];
   if (storeId) {

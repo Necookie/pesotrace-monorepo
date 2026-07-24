@@ -4,7 +4,7 @@ import { RequestTrialCreditsCard } from "@/components/settings/request-trial-cre
 
 export default async function CreditsPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   let balance = 0;
   let hasPendingRequest = false;

@@ -5,7 +5,7 @@ import { UploadFlow } from "./upload-flow";
 
 export default async function UploadPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   let feeTierConfig = DEFAULT_FEE_TIER_CONFIG;
   if (storeId) {

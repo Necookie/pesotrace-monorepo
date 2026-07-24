@@ -26,7 +26,7 @@ export async function confirmTransaction(input: TransactionConfirmInput) {
 
   const supabase = await createClient();
 
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) {
     return { ok: false as const, error: "No store found" };
   }
@@ -79,7 +79,7 @@ export async function deleteUploadedSource(sourceFileUrl: string) {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   // The upload path is always `${storeId}/...` — refuse to delete anything

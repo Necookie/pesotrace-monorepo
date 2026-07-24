@@ -4,7 +4,7 @@ import { formatPeso } from "@/lib/format";
 
 export default async function BranchesPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   const { data: store } = storeId
     ? await supabase.from("stores").select("name").eq("id", storeId).single()

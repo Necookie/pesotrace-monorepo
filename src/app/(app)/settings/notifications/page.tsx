@@ -4,7 +4,7 @@ import { NotificationPrefsForm } from "@/components/settings/notification-prefs-
 
 export default async function NotificationsSettingsPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   let prefs = { extractionFailed: true, lowBalance: true };
   if (storeId) {

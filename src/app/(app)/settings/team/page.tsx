@@ -6,7 +6,7 @@ import { TeamSettingsPanel } from "@/components/settings/team-settings-panel";
 export default async function TeamSettingsPage() {
   const { userId } = await auth();
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   if (!storeId || !userId) {
     return <p className="text-sm text-body">Setting up your store — refresh in a moment.</p>;

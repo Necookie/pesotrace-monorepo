@@ -22,7 +22,7 @@ export async function confirmStatementImport(rows: StatementRow[], sourceFileUrl
   }
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) {
     return { ok: false as const, error: "No store found" };
   }

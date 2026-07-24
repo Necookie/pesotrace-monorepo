@@ -13,7 +13,7 @@ import { CATEGORY_CHART_COLORS } from "@/lib/chart-colors";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   if (!storeId) {
     return (

@@ -16,7 +16,7 @@ export default async function LedgerPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   const limit = Math.max(PAGE_SIZE, Number(params.limit) || PAGE_SIZE);
 

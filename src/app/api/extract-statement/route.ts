@@ -35,7 +35,7 @@ async function handlePost(request: Request) {
 
   const supabase = await createClient();
 
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) {
     return NextResponse.json({ error: "No store found for this user" }, { status: 400 });
   }

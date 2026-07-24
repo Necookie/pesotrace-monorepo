@@ -4,7 +4,7 @@ import { ClearHistoryCard } from "@/components/settings/clear-history-card";
 
 export default async function DangerZonePage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   let transactionCount = 0;
   if (storeId) {

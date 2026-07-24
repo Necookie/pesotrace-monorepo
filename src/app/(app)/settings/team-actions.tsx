@@ -27,7 +27,7 @@ export async function createInvitation(input: { email: string; role: "manager" |
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();
@@ -82,7 +82,7 @@ export async function revokeInvitation(invitationId: string) {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();
@@ -119,7 +119,7 @@ export async function changeMemberRole(input: { memberId: string; role: "manager
   }
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();
@@ -162,7 +162,7 @@ export async function removeMember(memberId: string) {
   }
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", userId).single();

@@ -21,7 +21,7 @@ export async function updateFeeTiers(config: FeeTierConfig) {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase
@@ -50,7 +50,7 @@ export async function updateNotificationPrefs(prefs: NotificationPrefs) {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase
@@ -84,7 +84,7 @@ export async function updateStorePhoneNumbers(numbers: StorePhoneNumbers) {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase
@@ -115,7 +115,7 @@ export async function requestTrialCredits() {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: existing } = await supabase
@@ -151,7 +151,7 @@ export async function clearTransactionHistory(confirmation: string) {
   if (!userId) return { ok: false as const, error: "Not authenticated" };
 
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { data: myProfile } = await supabase

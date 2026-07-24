@@ -4,7 +4,7 @@ import { ReportBuilder } from "./report-builder";
 
 export default async function ReportsPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   // Reports lets the user pick any date range client-side after load, so the
   // default 500-row (most-recent-first) cap used elsewhere would silently
   // drop older transactions from a report that goes further back.

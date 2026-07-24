@@ -5,7 +5,7 @@ import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
 export default async function FeeTiersPage() {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
 
   let config = DEFAULT_FEE_TIER_CONFIG;
   if (storeId) {

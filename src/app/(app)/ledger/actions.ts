@@ -6,7 +6,7 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 
 export async function confirmReview(transactionId: string) {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { error } = await supabase
@@ -24,7 +24,7 @@ export async function confirmReview(transactionId: string) {
 
 export async function getTransactionDetail(transactionId: string) {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return null;
 
   const { data: transaction } = await supabase
@@ -62,7 +62,7 @@ export async function updateTransaction(
   }
 ) {
   const supabase = await createClient();
-  const storeId = await getCurrentStoreId(supabase);
+  const storeId = await getCurrentStoreId();
   if (!storeId) return { ok: false as const, error: "No store found" };
 
   const { error } = await supabase
