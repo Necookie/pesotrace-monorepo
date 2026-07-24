@@ -10,6 +10,8 @@ import { CreditUsageChart, RequestVolumeChart } from "@/components/charts/lazy";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
+import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
+import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
@@ -44,6 +46,12 @@ export default async function AdminStoreDetailPage({
 
   if (!detail) notFound();
 
+  const { data: store } = await supabase
+    .from("stores")
+    .select("fee_tier_config, fee_formula")
+    .eq("id", id)
+    .maybeSingle();
+
   return (
     <div className="space-y-8">
       <div>
@@ -77,6 +85,12 @@ export default async function AdminStoreDetailPage({
         <RenameStoreForm storeId={detail.storeId} currentName={detail.storeName} />
         <AdjustCreditsForm storeId={detail.storeId} />
       </div>
+
+      <StoreFeeConfigCard
+        storeId={detail.storeId}
+        initialTiers={store?.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG}
+        initialFormula={store?.fee_formula ?? null}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
