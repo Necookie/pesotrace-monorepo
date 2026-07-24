@@ -14,6 +14,7 @@ const ACTION_LABEL: Record<AdminActionType, string> = {
   delete_store: "Deleted store",
   grant_admin: "Granted admin",
   revoke_admin: "Revoked admin",
+  update_fee_tiers: "Updated fee setup",
 };
 
 const ACTION_TEXT_COLOR: Record<AdminActionType, string> = {
@@ -24,6 +25,7 @@ const ACTION_TEXT_COLOR: Record<AdminActionType, string> = {
   delete_store: "text-down",
   grant_admin: "text-up",
   revoke_admin: "text-down",
+  update_fee_tiers: "text-ink",
 };
 
 export default async function AdminAuditLogPage() {

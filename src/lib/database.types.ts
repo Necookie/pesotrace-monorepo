@@ -12,7 +12,8 @@ export type AdminActionType =
   | "update_store_name"
   | "delete_store"
   | "grant_admin"
-  | "revoke_admin";
+  | "revoke_admin"
+  | "update_fee_tiers";
 export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -37,6 +38,8 @@ export type Database = {
           id: string;
           name: string;
           fee_tier_config: FeeTier[];
+          /** Overrides fee_tier_config when set. See lib/fee-formula.ts. */
+          fee_formula: string | null;
           phone_numbers: string[];
           notification_prefs: NotificationPrefs;
           created_at: string;
@@ -45,6 +48,7 @@ export type Database = {
           id?: string;
           name: string;
           fee_tier_config?: FeeTier[];
+          fee_formula?: string | null;
           phone_numbers?: string[];
           notification_prefs?: NotificationPrefs;
           created_at?: string;
