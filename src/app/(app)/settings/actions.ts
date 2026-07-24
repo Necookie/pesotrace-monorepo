@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { feeTierConfigSchema, type FeeTierConfig } from "@/lib/schemas/fee-tier";
 import { storePhoneNumbersSchema, type StorePhoneNumbers } from "@/lib/schemas/store-phone";
+import { validateFormula } from "@/lib/fee-formula-validate";
 import { notifyNewTrialRequest } from "@/lib/email/notify-operator";
 import { trackServerEvent, ServerEvent } from "@/lib/analytics/events-server";
 import type { NotificationPrefs } from "@/lib/database.types";
@@ -37,6 +38,55 @@ export async function updateFeeTiers(config: FeeTierConfig) {
   const { error } = await supabase
     .from("stores")
     .update({ fee_tier_config: parsed.data })
+    .eq("id", storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/settings/fee-tiers");
+  return { ok: true as const };
+}
+
+/**
+ * Saves (or clears, with null/empty) the store's advanced fee formula.
+ *
+ * Validation is not optional here: an unvalidated formula that throws at
+ * billing time silently falls back to the tier table, which would charge the
+ * wrong fee without anyone noticing. Rejecting at save time is the only place
+ * a human is present to fix it.
+ */
+export async function updateFeeFormula(formula: string | null) {
+  const { userId } = await auth();
+  if (!userId) return { ok: false as const, error: "Not authenticated" };
+
+  const trimmed = formula?.trim() ?? "";
+  const next = trimmed === "" ? null : trimmed;
+
+  if (next !== null) {
+    const validation = validateFormula(next);
+    if (!validation.ok) {
+      return { ok: false as const, error: validation.error };
+    }
+  }
+
+  const supabase = await createClient();
+  const storeId = await getCurrentStoreId();
+  if (!storeId) return { ok: false as const, error: "No store found" };
+
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  // Deliberately stricter than the tier table: a formula can express things a
+  // tier row cannot, so it stays with the owner rather than managers.
+  if (myProfile?.role !== "owner") {
+    return { ok: false as const, error: "Only the store owner can edit the fee formula" };
+  }
+
+  const { error } = await supabase
+    .from("stores")
+    .update({ fee_formula: next })
     .eq("id", storeId);
 
   if (error) return { ok: false as const, error: error.message };
