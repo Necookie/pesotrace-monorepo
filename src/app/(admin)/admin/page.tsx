@@ -8,6 +8,7 @@ import { CreditUsageChart } from "@/components/charts/lazy";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
+import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
@@ -46,6 +47,7 @@ export default async function AdminOverviewPage() {
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="py-3 pl-4">Store</TableHead>
+              <TableHead className="py-3">Fee setup</TableHead>
               <TableHead className="py-3 text-right">Credit balance</TableHead>
               <TableHead className="py-3 text-right">Today</TableHead>
               <TableHead className="py-3 text-right">Extractions (30d)</TableHead>
@@ -67,6 +69,9 @@ export default async function AdminOverviewPage() {
                       Out of credits
                     </span>
                   )}
+                </TableCell>
+                <TableCell className="max-w-56 py-3">
+                  <FeeConfigBadge summary={store.feeConfig} />
                 </TableCell>
                 <TableCell
                   className={cn(
@@ -98,7 +103,7 @@ export default async function AdminOverviewPage() {
             ))}
             {stores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted">
+                <TableCell colSpan={9} className="py-10 text-center text-muted">
                   No stores yet.
                 </TableCell>
               </TableRow>
@@ -126,6 +131,11 @@ export default async function AdminOverviewPage() {
                 )}
               </div>
               <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
+            </div>
+
+            <div className="mt-3">
+              <p className="text-xs text-muted">Fee setup</p>
+              <FeeConfigBadge summary={store.feeConfig} className="mt-1" />
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-3">
