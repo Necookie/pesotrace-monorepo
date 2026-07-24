@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStoreCreditDetail } from "@/lib/queries/admin";
+import { getStoreCreditDetail, listStoreFeeChanges } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
 import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
 import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
+import { StoreFeeHistory } from "@/components/admin/store-fee-history";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 
@@ -47,11 +48,10 @@ export default async function AdminStoreDetailPage({
 
   if (!detail) notFound();
 
-  const { data: store } = await supabase
-    .from("stores")
-    .select("fee_tier_config, fee_formula")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: store }, feeChanges] = await Promise.all([
+    supabase.from("stores").select("fee_tier_config, fee_formula").eq("id", id).maybeSingle(),
+    listStoreFeeChanges(supabase, id),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -99,6 +99,8 @@ export default async function AdminStoreDetailPage({
         initialTiers={store?.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG}
         initialFormula={store?.fee_formula ?? null}
       />
+
+      <StoreFeeHistory changes={feeChanges} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div>

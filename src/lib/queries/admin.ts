@@ -298,6 +298,55 @@ export type AdminAuditLogEntry = {
   createdAt: string;
 };
 
+export type FeeConfigChange = {
+  id: string;
+  actorUserId: string;
+  targetSummary: string | null;
+  previousTiers: Json;
+  previousFormula: string | null;
+  newTiers: Json;
+  newFormula: string | null;
+  createdAt: string;
+};
+
+/**
+ * Fee-setup edits for one store, newest first.
+ *
+ * "My fees changed and I don't know why" is a support question that is
+ * otherwise unanswerable — the stores row only holds the current value. Note
+ * this covers admin-side edits only: owners changing their own fees in
+ * settings do not write to the admin audit log.
+ */
+export async function listStoreFeeChanges(
+  supabase: SupabaseClient<Database>,
+  storeId: string,
+  limit = 20
+): Promise<FeeConfigChange[]> {
+  const { data, error } = await supabase
+    .from("admin_audit_log")
+    .select("id, actor_user_id, target_summary, metadata, created_at")
+    .eq("store_id", storeId)
+    .eq("action", "update_fee_tiers")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return (data ?? []).map((entry) => {
+    const meta = (entry.metadata ?? {}) as Record<string, Json>;
+    return {
+      id: entry.id,
+      actorUserId: entry.actor_user_id,
+      targetSummary: entry.target_summary,
+      previousTiers: meta.previousTiers ?? null,
+      previousFormula: (meta.previousFormula as string | null) ?? null,
+      newTiers: meta.newTiers ?? null,
+      newFormula: (meta.newFormula as string | null) ?? null,
+      createdAt: entry.created_at,
+    };
+  });
+}
+
 export async function listAuditLog(
   supabase: SupabaseClient<Database>,
   limit = AUDIT_LOG_LIMIT
