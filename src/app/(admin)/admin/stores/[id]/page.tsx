@@ -11,6 +11,7 @@ import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
 import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
+import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 
@@ -85,6 +86,13 @@ export default async function AdminStoreDetailPage({
         <RenameStoreForm storeId={detail.storeId} currentName={detail.storeName} />
         <AdjustCreditsForm storeId={detail.storeId} />
       </div>
+
+      <StoreFeeSummary
+        config={{
+          tiers: store?.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG,
+          formula: store?.fee_formula,
+        }}
+      />
 
       <StoreFeeConfigCard
         storeId={detail.storeId}
