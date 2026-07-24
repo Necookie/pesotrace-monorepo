@@ -5,6 +5,8 @@ import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
 import type { RequestVolumePoint } from "@/components/charts/request-volume-chart";
 import { formatDate } from "@/lib/format";
 import { paginateRows } from "@/lib/pagination";
+import { summarizeFeeConfig, type FeeConfigSummary } from "@/lib/fees";
+import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
 const LEDGER_HISTORY_LIMIT = 200;
 const ANALYTICS_WINDOW_DAYS = 30;
@@ -150,6 +152,12 @@ export type AdminStoreRow = {
   requestsToday: number;
   lastActivityAt: string | null;
   dailyUsage: CreditUsagePoint[];
+  /**
+   * The store's own fee setup, summarized. Carried on the overview row so an
+   * operator can spot a misconfigured or still-default schedule while scanning
+   * the list, instead of opening each store to find out.
+   */
+  feeConfig: FeeConfigSummary;
 };
 
 function dayKey(iso: string): string {
@@ -166,7 +174,7 @@ export async function listStoresWithCredits(
     { data: credits, error: creditsError },
     { data: recentLedger, error: ledgerError },
   ] = await Promise.all([
-    supabase.from("stores").select("id, name").order("name"),
+    supabase.from("stores").select("id, name, fee_tier_config, fee_formula").order("name"),
     supabase.from("store_credits").select("store_id, balance"),
     supabase
       .from("credit_ledger")
@@ -231,6 +239,10 @@ export async function listStoresWithCredits(
       costUsdThisMonth: usage?.costUsd ?? 0,
       lastActivityAt: usage?.lastActivityAt ?? null,
       dailyUsage,
+      feeConfig: summarizeFeeConfig({
+        tiers: store.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG,
+        formula: store.fee_formula,
+      }),
     };
   });
 }
