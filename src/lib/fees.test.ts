@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeFee, matchTier, resolveFee } from "./fees";
+import { computeFee, matchTier, resolveFee, summarizeFeeConfig } from "./fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "./schemas/fee-tier";
 
 describe("computeFee", () => {
@@ -160,5 +160,74 @@ describe("resolveFee", () => {
       expect(resolveFee(context(100), { tiers, formula }).fee).toBe(15);
       expect(resolveFee(context(900), { tiers, formula }).fee).toBe(25);
     }
+  });
+});
+
+describe("summarizeFeeConfig", () => {
+  it("flags a store still on the shipped default", () => {
+    const summary = summarizeFeeConfig({ tiers: DEFAULT_FEE_TIER_CONFIG });
+    expect(summary.isDefault).toBe(true);
+    expect(summary.mode).toBe("tiers");
+  });
+
+  it("does not flag a customized tier table as default", () => {
+    const summary = summarizeFeeConfig({
+      tiers: [{ min: 0, max: null, type: "flat", fee: 20 }],
+    });
+    expect(summary.isDefault).toBe(false);
+  });
+
+  it("describes a tier table with a count and a readable detail line", () => {
+    const summary = summarizeFeeConfig({
+      tiers: [
+        { min: 0, max: 200, type: "flat", fee: 10 },
+        { min: 201, max: null, type: "flat", fee: 15 },
+      ],
+    });
+    expect(summary.label).toBe("2 tiers");
+    expect(summary.detail).toContain("₱0–200 → ₱10 flat");
+    expect(summary.detail).toContain("₱201+ → ₱15 flat");
+  });
+
+  it("uses the singular for a one-tier config", () => {
+    const summary = summarizeFeeConfig({
+      tiers: [{ min: 0, max: null, type: "flat", fee: 10 }],
+    });
+    expect(summary.label).toBe("1 tier");
+  });
+
+  it("reports formula mode and collapses the source to one line", () => {
+    const summary = summarizeFeeConfig({
+      tiers: DEFAULT_FEE_TIER_CONFIG,
+      formula: "amount <= 500\n  ? 15\n  : 25",
+    });
+    expect(summary.mode).toBe("formula");
+    expect(summary.label).toBe("Custom formula");
+    expect(summary.detail).toBe("amount <= 500 ? 15 : 25");
+    expect(summary.isDefault).toBe(false);
+  });
+
+  it("samples what real amounts cost, matching what billing would charge", () => {
+    const summary = summarizeFeeConfig({
+      tiers: DEFAULT_FEE_TIER_CONFIG,
+      formula: "amount <= 1000 ? 20 : 20 + ceil((amount - 1000) / 500) * 10",
+    });
+    expect(summary.samples.find((s) => s.amount === 1000)?.fee).toBe(20);
+    expect(summary.samples.find((s) => s.amount === 1500)?.fee).toBe(30);
+  });
+
+  it("surfaces a saved formula that has stopped evaluating", () => {
+    // Billing silently falls back to tiers here, so support needs to be told.
+    const summary = summarizeFeeConfig({
+      tiers: [{ min: 0, max: null, type: "flat", fee: 20 }],
+      formula: "amount / 0",
+    });
+    expect(summary.formulaError).toMatch(/Division by zero/);
+    expect(summary.samples.every((s) => s.fee === 20)).toBe(true);
+  });
+
+  it("treats a whitespace-only formula as unset", () => {
+    const summary = summarizeFeeConfig({ tiers: DEFAULT_FEE_TIER_CONFIG, formula: "  \n " });
+    expect(summary.mode).toBe("tiers");
   });
 });

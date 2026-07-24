@@ -1,4 +1,4 @@
-import type { FeeTierConfig, FeeTier } from "@/lib/schemas/fee-tier";
+import { DEFAULT_FEE_TIER_CONFIG, type FeeTierConfig, type FeeTier } from "@/lib/schemas/fee-tier";
 import {
   parseFormula,
   evaluateFormula,
@@ -129,4 +129,78 @@ export function resolveFee(
   }
 
   return { fee: computeFee(context.amount, config.tiers), source: "tiers" };
+}
+
+/** Amounts an operator scans to sanity-check a store's schedule at a glance. */
+export const FEE_SAMPLE_AMOUNTS = [200, 500, 1000, 1500] as const;
+
+export type FeeConfigSummary = {
+  mode: FeeSource;
+  /** Short badge text, e.g. "Custom formula" or "3 tiers". */
+  label: string;
+  /** One-line human description of the actual rule. */
+  detail: string;
+  /** True when the store has never touched the shipped default. */
+  isDefault: boolean;
+  /** What common amounts cost under this config, for at-a-glance sanity checks. */
+  samples: { amount: number; fee: number }[];
+  /** Set when the saved formula no longer evaluates — support should see this. */
+  formulaError?: string;
+};
+
+function isDefaultTierConfig(tiers: FeeTierConfig): boolean {
+  if (tiers.length !== DEFAULT_FEE_TIER_CONFIG.length) return false;
+  return tiers.every((tier, i) => {
+    const base = DEFAULT_FEE_TIER_CONFIG[i];
+    return (
+      tier.min === base.min &&
+      tier.max === base.max &&
+      tier.type === base.type &&
+      tier.fee === base.fee
+    );
+  });
+}
+
+/**
+ * Describes a store's fee setup for support surfaces — the admin overview
+ * list and store detail page — without making the operator open an editor to
+ * find out what a store actually charges.
+ *
+ * Samples run through resolveFee, so what an operator reads here is what
+ * billing would really do, including the tier-fallback path when a saved
+ * formula has stopped evaluating.
+ */
+export function summarizeFeeConfig(config: StoreFeeConfig): FeeConfigSummary {
+  const formula = config.formula?.trim();
+
+  const samples = FEE_SAMPLE_AMOUNTS.map((amount) => ({
+    amount,
+    fee: resolveFee({ amount, direction: "send", category: "cash_out" }, config).fee,
+  }));
+
+  if (formula) {
+    // Probe once to surface a formula that has stopped working — otherwise it
+    // silently bills from tiers and nobody notices until a customer complains.
+    const probe = resolveFee(
+      { amount: 1000, direction: "send", category: "cash_out" },
+      config
+    );
+
+    return {
+      mode: "formula",
+      label: "Custom formula",
+      detail: formula.replace(/\s+/g, " ").trim(),
+      isDefault: false,
+      samples,
+      formulaError: probe.formulaError,
+    };
+  }
+
+  return {
+    mode: "tiers",
+    label: `${config.tiers.length} tier${config.tiers.length === 1 ? "" : "s"}`,
+    detail: config.tiers.map(describeTier).join(" · "),
+    isDefault: isDefaultTierConfig(config.tiers),
+    samples,
+  };
 }
