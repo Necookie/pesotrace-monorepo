@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { Database, TransactionCategory } from "@/lib/database.types";
+import type { TransactionCategory } from "@/lib/database.types";
+import type { ReportRow } from "@/lib/queries/transactions";
 import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
 import { SendReceiveChart, CategoryBreakdownChart } from "@/components/charts/lazy";
-
-type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
 function isoDaysAgo(days: number) {
   const d = new Date();
@@ -19,7 +18,7 @@ function isoDaysAgo(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export function ReportBuilder({ rows }: { rows: Row[] }) {
+export function ReportBuilder({ rows }: { rows: ReportRow[] }) {
   const [from, setFrom] = useState(isoDaysAgo(30));
   const [to, setTo] = useState(isoDaysAgo(0));
   const [grouping, setGrouping] = useState<GroupPeriod>("weekly");

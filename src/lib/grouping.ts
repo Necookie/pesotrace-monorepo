@@ -3,10 +3,18 @@ import type { Database } from "@/lib/database.types";
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 export type GroupPeriod = "daily" | "weekly" | "monthly";
 
-export type TransactionGroup = {
+/**
+ * The only fields grouping actually reads. Kept structural so callers that
+ * fetch a narrow column set (the reports page) can group without paying for
+ * a full transactions row, while the ledger still passes complete rows
+ * through and gets them back in `rows`.
+ */
+export type GroupableRow = Pick<Row, "occurred_at" | "amount" | "direction">;
+
+export type TransactionGroup<T extends GroupableRow = Row> = {
   key: string;
   label: string;
-  rows: Row[];
+  rows: T[];
   netTotal: number;
   sendTotal: number;
   receiveTotal: number;
@@ -44,8 +52,11 @@ function groupKey(iso: string, period: GroupPeriod): { key: string; label: strin
   return { key, label: d.toLocaleDateString("en-PH", { month: "long", year: "numeric" }) };
 }
 
-export function groupTransactions(rows: Row[], period: GroupPeriod): TransactionGroup[] {
-  const groups = new Map<string, TransactionGroup>();
+export function groupTransactions<T extends GroupableRow>(
+  rows: T[],
+  period: GroupPeriod
+): TransactionGroup<T>[] {
+  const groups = new Map<string, TransactionGroup<T>>();
 
   for (const row of rows) {
     const { key, label } = groupKey(row.occurred_at, period);

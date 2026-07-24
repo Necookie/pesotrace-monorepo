@@ -53,6 +53,33 @@ export async function listTransactions(
   return paginateRows(data ?? [], limit);
 }
 
+// The reports page loads up to 5,000 rows so its client-side date picker can
+// range over history without refetching. Serializing full rows into the RSC
+// payload meant shipping ~18 columns each — including notes, source_file_url
+// and tags — when ReportBuilder only reads these four.
+const REPORT_COLUMNS = "occurred_at, amount, direction, category" as const;
+
+export type ReportRow = Pick<
+  Database["public"]["Tables"]["transactions"]["Row"],
+  "occurred_at" | "amount" | "direction" | "category"
+>;
+
+export async function listTransactionsForReport(
+  supabase: SupabaseClient<Database>,
+  storeId: string,
+  limit = 5000
+): Promise<ReportRow[]> {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select(REPORT_COLUMNS)
+    .eq("store_id", storeId)
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 import { getStoreContext } from "@/lib/queries/store-context";
 
 // Delegates to the request-cached store context, so the ~20 call sites here
