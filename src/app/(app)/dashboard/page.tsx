@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { getDashboardStats } from "@/lib/queries/dashboard";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
+import { TodayIncomeTile } from "@/components/dashboard/today-income-tile";
 import { SendReceiveChart, PieBreakdownChart, FeeTrendChart } from "@/components/charts/lazy";
 import { TopCounterparties } from "@/components/dashboard/top-counterparties";
 import { buttonVariants } from "@/components/ui/button";
@@ -50,6 +51,8 @@ export default async function DashboardPage() {
           </Link>
         )}
       </div>
+
+      <TodayIncomeTile income={stats.todayIncome} deltaPct={stats.todayIncomeDelta.pct} />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <KpiTile
