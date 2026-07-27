@@ -190,14 +190,20 @@ export async function approveCreditRequest(input: { requestId: string; grantAmou
   const adminUserId = await requirePlatformAdmin();
   const supabase = createAdminClient();
 
-  const { data: request, error: fetchError } = await supabase
+  // Claim the request atomically BEFORE granting: the status guard lives in
+  // the UPDATE, so a double-click or a second operator can't both pass a
+  // separate status check and each grant credits. If no row comes back, it
+  // was already decided (or doesn't exist).
+  const { data: request, error: claimError } = await supabase
     .from("credit_requests")
-    .select("id, store_id, status")
+    .update({ status: "approved", decided_by: adminUserId, decided_at: new Date().toISOString() })
     .eq("id", parsed.data.requestId)
-    .single();
+    .eq("status", "pending")
+    .select("store_id")
+    .maybeSingle();
 
-  if (fetchError) return { ok: false as const, error: fetchError.message };
-  if (request.status !== "pending") {
+  if (claimError) return { ok: false as const, error: claimError.message };
+  if (!request) {
     return { ok: false as const, error: "This request has already been decided" };
   }
 
@@ -208,13 +214,15 @@ export async function approveCreditRequest(input: { requestId: string; grantAmou
     p_created_by: adminUserId,
     p_entry_type: "grant",
   });
-  if (grantError) return { ok: false as const, error: grantError.message };
-
-  const { error: updateError } = await supabase
-    .from("credit_requests")
-    .update({ status: "approved", decided_by: adminUserId, decided_at: new Date().toISOString() })
-    .eq("id", parsed.data.requestId);
-  if (updateError) return { ok: false as const, error: updateError.message };
+  if (grantError) {
+    // Release the claim so the request can be retried rather than being
+    // stuck "approved" with no credits actually granted.
+    await supabase
+      .from("credit_requests")
+      .update({ status: "pending", decided_by: null, decided_at: null })
+      .eq("id", parsed.data.requestId);
+    return { ok: false as const, error: grantError.message };
+  }
 
   await logAdminAction(supabase, adminUserId, "approve_request", request.store_id, null, {
     requestId: parsed.data.requestId,
