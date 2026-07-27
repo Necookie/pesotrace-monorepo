@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/format";
 import { paginateRows } from "@/lib/pagination";
 import { summarizeFeeConfig, type FeeConfigSummary } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
+import { storeDayKey, storeToday } from "@/lib/time";
 
 const LEDGER_HISTORY_LIMIT = 200;
 const ANALYTICS_WINDOW_DAYS = 30;
@@ -43,13 +44,13 @@ export async function getStoreAnalytics(
   const countByDay = new Map<string, number>();
   const creditsByDay = new Map<string, number>();
   for (const entry of entries ?? []) {
-    const key = dayKey(entry.created_at);
+    const key = storeDayKey(entry.created_at);
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
     creditsByDay.set(key, (creditsByDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
   }
 
-  const todayKey = dayKey(new Date().toISOString());
-  const weekAgoKey = dayKey(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString());
+  const todayKey = storeToday();
+  const weekAgoKey = storeDayKey(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000));
 
   const requestsToday = countByDay.get(todayKey) ?? 0;
   const requestsThisWeek = [...countByDay.entries()]
@@ -160,9 +161,6 @@ export type AdminStoreRow = {
   feeConfig: FeeConfigSummary;
 };
 
-function dayKey(iso: string): string {
-  return iso.slice(0, 10);
-}
 
 export async function listStoresWithCredits(
   supabase: SupabaseClient<Database>
@@ -189,7 +187,7 @@ export async function listStoresWithCredits(
 
   const balanceByStore = new Map((credits ?? []).map((c) => [c.store_id, c.balance]));
 
-  const todayKey = dayKey(new Date().toISOString());
+  const todayKey = storeToday();
 
   const usageByStore = new Map<
     string,
@@ -217,7 +215,7 @@ export async function listStoresWithCredits(
     existing.costUsd += entry.cost_usd;
     if (entry.created_at > existing.lastActivityAt) existing.lastActivityAt = entry.created_at;
 
-    const key = dayKey(entry.created_at);
+    const key = storeDayKey(entry.created_at);
     if (key === todayKey) existing.requestsToday += 1;
     existing.byDay.set(key, (existing.byDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
   }
