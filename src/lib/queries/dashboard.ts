@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Database, TransactionCategory } from "@/lib/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
+import { storeDayKey, storeToday, previousDayKey, recentDayKeys, formatDayKeyShort } from "@/lib/time";
 
 const DASHBOARD_COLUMNS =
   "amount, direction, category, status, occurred_at, counterparty_name, counterparty_number, fee_computed" as const;
@@ -20,6 +21,8 @@ type DashboardRow = Pick<
 
 export type PeriodDelta = { current: number; previous: number; pct: number | null };
 
+export type DailyIncomePoint = { day: string; label: string; income: number; count: number };
+
 export type DashboardStats = {
   totalVolume: number;
   transactionCount: number;
@@ -31,6 +34,12 @@ export type DashboardStats = {
   feeTrend: { label: string; fee: number }[];
   categoryTotals: { category: TransactionCategory; label: string; amount: number }[];
   statusBreakdown: { confirmed: number; needsReview: number };
+  // Income earned today (Manila) and its change vs. yesterday, for the
+  // day-to-day figure an owner checks against the cash drawer. Uses
+  // store-local days, unlike the UTC-bucketed feeTrend above.
+  todayIncome: number;
+  todayIncomeDelta: PeriodDelta;
+  dailyIncome: DailyIncomePoint[];
   deltas: {
     totalVolume: PeriodDelta;
     transactionCount: PeriodDelta;
@@ -46,6 +55,43 @@ function dayKey(iso: string) {
 function periodDelta(current: number, previous: number): PeriodDelta {
   const pct = previous > 0 ? ((current - previous) / previous) * 100 : null;
   return { current, previous, pct };
+}
+
+type IncomeRow = Pick<DashboardRow, "occurred_at" | "fee_computed">;
+
+/**
+ * Today's income (Manila), its change vs. yesterday, and the last 7 store-days
+ * as a zero-filled series. Pure so it can be tested without a database — the
+ * `now` argument is injectable for exactly that reason.
+ *
+ * Keyed on the Manila calendar day rather than the UTC day the rest of the
+ * dashboard uses, since this is the figure an owner checks daily.
+ */
+export function dailyIncomeFromRows(
+  rows: IncomeRow[],
+  now: Date = new Date()
+): { todayIncome: number; todayIncomeDelta: PeriodDelta; dailyIncome: DailyIncomePoint[] } {
+  const byDay = new Map<string, { income: number; count: number }>();
+  for (const r of rows) {
+    const key = storeDayKey(r.occurred_at);
+    const entry = byDay.get(key) ?? { income: 0, count: 0 };
+    entry.income += Number(r.fee_computed);
+    entry.count += 1;
+    byDay.set(key, entry);
+  }
+
+  const dailyIncome: DailyIncomePoint[] = recentDayKeys(7, now).map((day) => ({
+    day,
+    label: formatDayKeyShort(day),
+    income: byDay.get(day)?.income ?? 0,
+    count: byDay.get(day)?.count ?? 0,
+  }));
+
+  const todayKey = storeToday(now);
+  const todayIncome = byDay.get(todayKey)?.income ?? 0;
+  const yesterdayIncome = byDay.get(previousDayKey(todayKey))?.income ?? 0;
+
+  return { todayIncome, todayIncomeDelta: periodDelta(todayIncome, yesterdayIncome), dailyIncome };
 }
 
 function summarize(rows: DashboardRow[]) {
@@ -128,6 +174,8 @@ export const getDashboardStats = cache(async function getDashboardStats(
     needsReview: needsReviewCount,
   };
 
+  const { todayIncome, todayIncomeDelta, dailyIncome } = dailyIncomeFromRows(rows, now);
+
   return {
     totalVolume: current.totalVolume,
     transactionCount: current.transactionCount,
@@ -139,6 +187,9 @@ export const getDashboardStats = cache(async function getDashboardStats(
     feeTrend,
     categoryTotals,
     statusBreakdown,
+    todayIncome,
+    todayIncomeDelta,
+    dailyIncome,
     deltas: {
       totalVolume: periodDelta(current.totalVolume, previous.totalVolume),
       transactionCount: periodDelta(current.transactionCount, previous.transactionCount),
