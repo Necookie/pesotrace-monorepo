@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { transactionCategorySchema } from "@/lib/schemas/transaction";
+import { transactionCategorySchema, occurredAtSchema } from "@/lib/schemas/transaction";
 
 /**
  * A single row parsed from a GCash statement export (PDF/CSV). debit/credit
@@ -8,7 +8,7 @@ import { transactionCategorySchema } from "@/lib/schemas/transaction";
  */
 export const statementRowSchema = z
   .object({
-    occurred_at: z.string().min(1),
+    occurred_at: occurredAtSchema,
     description: z.string(),
     ref_number: z.string().min(1),
     debit: z.coerce.number().min(0).optional(),

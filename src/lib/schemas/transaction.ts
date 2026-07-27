@@ -29,6 +29,26 @@ export const CATEGORY_LABELS: Record<TransactionCategory, string> = {
  * (2) the review form's zodResolver, (3) the base that the insert schema
  * extends. Keep this file free of server-only imports.
  */
+/**
+ * A transaction timestamp: a 24-hour, ISO-8601-style local datetime like
+ * `2026-07-27T15:45` or `2026-07-27T15:45:00` (an optional timezone suffix is
+ * tolerated). This rejects the 12-hour, AM/PM-bearing strings a model
+ * sometimes emits when it fails to convert a receipt's printed time — so a
+ * malformed or ambiguous timestamp fails loudly at validation rather than
+ * being stored and displayed with a flipped hour.
+ *
+ * Note: it validates *shape*, not correctness — a well-formed but wrong hour
+ * (the model reading 3:45 PM and writing 03:45) still parses. Preventing that
+ * is the extraction prompt's job; this is the backstop for everything else.
+ */
+export const occurredAtSchema = z
+  .string()
+  .min(1, "Date/time is required")
+  .refine(
+    (value) => /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(value) && !Number.isNaN(Date.parse(value)),
+    "Date/time must be a valid 24-hour timestamp (e.g. 2026-07-27T15:45)"
+  );
+
 export const extractedTransactionSchema = z.object({
   direction: z.enum(["send", "receive"]),
   category: transactionCategorySchema,
@@ -36,7 +56,7 @@ export const extractedTransactionSchema = z.object({
   ref_number: z.string().min(1, "Reference number is required"),
   counterparty_name: z.string().nullable().optional(),
   counterparty_number: z.string().nullable().optional(),
-  occurred_at: z.string().min(1, "Date/time is required"),
+  occurred_at: occurredAtSchema,
   confidence: z.coerce.number().min(0).max(1),
 });
 
