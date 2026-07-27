@@ -4,6 +4,7 @@ import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { getDashboardStats } from "@/lib/queries/dashboard";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 import { TodayIncomeTile } from "@/components/dashboard/today-income-tile";
+import { DailyIncomeBreakdown } from "@/components/dashboard/daily-income-breakdown";
 import { SendReceiveChart, PieBreakdownChart, FeeTrendChart } from "@/components/charts/lazy";
 import { TopCounterparties } from "@/components/dashboard/top-counterparties";
 import { buttonVariants } from "@/components/ui/button";
@@ -85,9 +86,12 @@ export default async function DashboardPage() {
         <TopCounterparties items={stats.topCounterparties} />
       </div>
 
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-ink">Income trend</h2>
-        <FeeTrendChart data={stats.feeTrend} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-sm font-semibold text-ink">Income trend</h2>
+          <FeeTrendChart data={stats.feeTrend} />
+        </div>
+        <DailyIncomeBreakdown days={stats.dailyIncome} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
