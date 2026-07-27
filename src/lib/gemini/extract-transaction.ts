@@ -13,7 +13,10 @@ const RESPONSE_SCHEMA = {
     ref_number: { type: Type.STRING },
     counterparty_name: { type: Type.STRING },
     counterparty_number: { type: Type.STRING },
-    occurred_at: { type: Type.STRING, description: "ISO 8601 datetime" },
+    occurred_at: {
+      type: Type.STRING,
+      description: "24-hour local timestamp YYYY-MM-DDTHH:mm:ss, no timezone suffix",
+    },
     confidence: { type: Type.NUMBER, description: "0 to 1" },
   },
   required: ["direction", "category", "amount", "ref_number", "occurred_at", "confidence"],
@@ -32,8 +35,16 @@ function buildPrompt(storePhoneNumbers: string[]): string {
     "back, 'load' for any 'Buy Load' transaction, 'bills' for bills payment " +
     "receipts, and 'other' for anything else (merchant payments, app purchases, " +
     "etc). ref_number is the GCash reference number shown on the receipt. " +
-    "occurred_at should be the transaction date/time shown, in ISO 8601 " +
-    "format (assume the current year if no year is shown). counterparty_name " +
+    "occurred_at is the transaction date/time shown on the receipt. GCash " +
+    "receipts print the time on a 12-hour clock with AM/PM (e.g. '3:45 PM', " +
+    "'11:20 AM'). Convert it to a 24-hour ISO 8601 local timestamp of the form " +
+    "YYYY-MM-DDTHH:mm:ss with NO timezone suffix (no 'Z', no '+08:00') — write " +
+    "the wall-clock time exactly as printed, just in 24-hour form. Conversion " +
+    "rules: 1:00 PM through 11:59 PM add 12 to the hour (3:45 PM -> 15:45); " +
+    "12:00 PM through 12:59 PM (noon) keep hour 12 (12:30 PM -> 12:30); 12:00 " +
+    "AM through 12:59 AM (midnight) use hour 00 (12:15 AM -> 00:15); 1:00 AM " +
+    "through 11:59 AM keep the hour as-is (9:05 AM -> 09:05). Assume the " +
+    "current year if no year is shown. counterparty_name " +
     "and counterparty_number are the other party's name and/or mobile number " +
     "if shown.";
 

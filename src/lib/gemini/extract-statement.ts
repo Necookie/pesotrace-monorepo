@@ -12,7 +12,10 @@ const RESPONSE_SCHEMA = {
       items: {
         type: Type.OBJECT,
         properties: {
-          occurred_at: { type: Type.STRING, description: "ISO 8601 datetime" },
+          occurred_at: {
+            type: Type.STRING,
+            description: "24-hour local timestamp YYYY-MM-DDTHH:mm:ss, no timezone suffix",
+          },
           description: { type: Type.STRING },
           ref_number: { type: Type.STRING },
           debit: { type: Type.NUMBER },
@@ -36,8 +39,14 @@ const PROMPT =
   "This is a GCash Transaction History statement export (a table with Date and " +
   "Time, Description, Reference No., Debit, Credit, Balance columns). Parse " +
   "every transaction row (skip the STARTING BALANCE, ENDING BALANCE, Total " +
-  "Debit, and Total Credit summary rows). For each row: occurred_at in ISO " +
-  "8601. debit is set only if the Debit column has a value (money left the " +
+  "Debit, and Total Credit summary rows). For each row: occurred_at is the " +
+  "Date and Time as a 24-hour ISO 8601 local timestamp of the form " +
+  "YYYY-MM-DDTHH:mm:ss with NO timezone suffix. GCash prints the time on a " +
+  "12-hour clock with AM/PM; convert to 24-hour, writing the wall-clock time " +
+  "exactly as printed: 1-11 PM add 12 to the hour (3:45 PM -> 15:45), 12 PM " +
+  "(noon) stays 12 (12:30 PM -> 12:30), 12 AM (midnight) becomes 00 (12:15 AM " +
+  "-> 00:15), 1-11 AM keep the hour (9:05 AM -> 09:05). " +
+  "debit is set only if the Debit column has a value (money left the " +
   "wallet), credit only if the Credit column has a value (money came in) — " +
   "exactly one of debit/credit should be set per row, not both. category " +
   "classifies the transaction for a remittance store's own records: " +
