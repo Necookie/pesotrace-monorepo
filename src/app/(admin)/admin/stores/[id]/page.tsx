@@ -2,7 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStoreCreditDetail, listStoreFeeChanges } from "@/lib/queries/admin";
+import {
+  getStoreCreditDetail,
+  listStoreFeeChanges,
+  getStoreTransactionsWithReceipts,
+} from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -13,6 +17,7 @@ import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
 import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
 import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
+import { StoreReceiptVerification } from "@/components/admin/store-receipt-verification";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { KpiTile } from "@/components/dashboard/kpi-tile";
 
@@ -31,27 +36,35 @@ const ENTRY_TYPE_TEXT_COLOR: Record<string, string> = {
 };
 
 const LEDGER_PAGE_SIZE = 200;
+const RECEIPT_PAGE_SIZE = 12;
 
 export default async function AdminStoreDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ledgerOffset?: string }>;
+  searchParams: Promise<{ ledgerOffset?: string; receiptOffset?: string }>;
 }) {
   const { id } = await params;
-  const { ledgerOffset: ledgerOffsetParam } = await searchParams;
+  const { ledgerOffset: ledgerOffsetParam, receiptOffset: receiptOffsetParam } =
+    await searchParams;
   const ledgerOffset = Math.max(0, Number(ledgerOffsetParam) || 0);
+  const receiptOffset = Math.max(0, Number(receiptOffsetParam) || 0);
 
   const supabase = createAdminClient();
   const detail = await getStoreCreditDetail(supabase, id, ledgerOffset);
 
   if (!detail) notFound();
 
-  const [{ data: store }, feeChanges] = await Promise.all([
+  const [{ data: store }, feeChanges, receipts] = await Promise.all([
     supabase.from("stores").select("fee_tier_config, fee_formula").eq("id", id).maybeSingle(),
     listStoreFeeChanges(supabase, id),
+    getStoreTransactionsWithReceipts(supabase, id, RECEIPT_PAGE_SIZE, receiptOffset),
   ]);
+
+  const receiptMoreParams = new URLSearchParams();
+  receiptMoreParams.set("receiptOffset", String(receiptOffset + RECEIPT_PAGE_SIZE));
+  if (ledgerOffset) receiptMoreParams.set("ledgerOffset", String(ledgerOffset));
 
   return (
     <div className="space-y-8">
@@ -81,6 +94,12 @@ export default async function AdminStoreDetailPage({
         <KpiTile label="Requests today" value={String(detail.requestsToday)} />
         <KpiTile label="Requests this week" value={String(detail.requestsThisWeek)} />
       </div>
+
+      <StoreReceiptVerification
+        rows={receipts.rows}
+        hasMore={receipts.hasMore}
+        moreHref={`/admin/stores/${detail.storeId}?${receiptMoreParams.toString()}`}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <RenameStoreForm storeId={detail.storeId} currentName={detail.storeName} />
