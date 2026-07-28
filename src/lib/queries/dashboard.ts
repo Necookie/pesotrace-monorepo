@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Database, TransactionCategory } from "@/lib/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CATEGORY_LABELS } from "@/lib/schemas/transaction";
-import { storeDayKey, storeToday, previousDayKey, recentDayKeys, formatDayKeyShort } from "@/lib/time";
+import { storeToday, previousDayKey, recentDayKeys, formatDayKeyShort } from "@/lib/time";
 
 const DASHBOARD_COLUMNS =
   "amount, direction, category, status, occurred_at, counterparty_name, counterparty_number, fee_computed" as const;
@@ -60,12 +60,18 @@ function periodDelta(current: number, previous: number): PeriodDelta {
 type IncomeRow = Pick<DashboardRow, "occurred_at" | "fee_computed">;
 
 /**
- * Today's income (Manila), its change vs. yesterday, and the last 7 store-days
- * as a zero-filled series. Pure so it can be tested without a database — the
- * `now` argument is injectable for exactly that reason.
+ * Today's income, its change vs. yesterday, and the last 7 days as a
+ * zero-filled series. Pure so it can be tested without a database — the `now`
+ * argument is injectable for exactly that reason.
  *
- * Keyed on the Manila calendar day rather than the UTC day the rest of the
- * dashboard uses, since this is the figure an owner checks daily.
+ * occurred_at holds the receipt's Manila wall-clock time stored under a UTC
+ * label (e.g. 7:00 PM -> "...T19:00:00Z"), NOT a true instant. So a row's day
+ * is the date already written in the value — a raw slice — and must NOT be run
+ * through storeDayKey, which would re-convert it to Manila and push evening
+ * transactions into the next day. That over-conversion was undercounting
+ * "today" here versus the income-trend chart, which slices the same way. (This
+ * is the opposite of admin analytics, whose created_at values ARE true
+ * instants and correctly use storeDayKey.)
  */
 export function dailyIncomeFromRows(
   rows: IncomeRow[],
@@ -73,7 +79,7 @@ export function dailyIncomeFromRows(
 ): { todayIncome: number; todayIncomeDelta: PeriodDelta; dailyIncome: DailyIncomePoint[] } {
   const byDay = new Map<string, { income: number; count: number }>();
   for (const r of rows) {
-    const key = storeDayKey(r.occurred_at);
+    const key = r.occurred_at.slice(0, 10);
     const entry = byDay.get(key) ?? { income: 0, count: 0 };
     entry.income += Number(r.fee_computed);
     entry.count += 1;
