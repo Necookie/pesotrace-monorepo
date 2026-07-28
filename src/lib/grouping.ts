@@ -20,12 +20,19 @@ export type TransactionGroup<T extends GroupableRow = Row> = {
   receiveTotal: number;
 };
 
+// occurred_at is the receipt's Manila wall-clock time stored under a UTC label,
+// so every date part and every label here reads in UTC. Host-local getters
+// (getDate/getMonth/toLocaleDateString without a zone) would regroup and
+// relabel evening transactions onto the wrong day/week/month on any non-UTC
+// machine — the same shift just fixed in the per-row formatters.
+const LABEL_TZ = "UTC";
+
 function startOfWeek(d: Date) {
   const date = new Date(d);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  date.setDate(diff);
-  date.setHours(0, 0, 0, 0);
+  const day = date.getUTCDay();
+  const diff = date.getUTCDate() - day + (day === 0 ? -6 : 1);
+  date.setUTCDate(diff);
+  date.setUTCHours(0, 0, 0, 0);
   return date;
 }
 
@@ -35,21 +42,29 @@ function groupKey(iso: string, period: GroupPeriod): { key: string; label: strin
     const key = d.toISOString().slice(0, 10);
     return {
       key,
-      label: d.toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }),
+      label: d.toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: LABEL_TZ,
+      }),
     };
   }
   if (period === "weekly") {
     const start = startOfWeek(d);
     const key = start.toISOString().slice(0, 10);
     const end = new Date(start);
-    end.setDate(end.getDate() + 6);
+    end.setUTCDate(end.getUTCDate() + 6);
     return {
       key,
-      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric" })}`,
+      label: `${start.toLocaleDateString("en-PH", { month: "short", day: "numeric", timeZone: LABEL_TZ })} – ${end.toLocaleDateString("en-PH", { month: "short", day: "numeric", timeZone: LABEL_TZ })}`,
     };
   }
-  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  return { key, label: d.toLocaleDateString("en-PH", { month: "long", year: "numeric" }) };
+  const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  return {
+    key,
+    label: d.toLocaleDateString("en-PH", { month: "long", year: "numeric", timeZone: LABEL_TZ }),
+  };
 }
 
 export function groupTransactions<T extends GroupableRow>(

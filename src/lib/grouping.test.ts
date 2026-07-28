@@ -53,4 +53,24 @@ describe("groupTransactions", () => {
     expect(groups).toHaveLength(2);
     expect(groups[0].rows).toHaveLength(2);
   });
+
+  // occurred_at is a wall-clock time stored under a UTC label, so grouping
+  // must read it in UTC. These pin down the times that a host-local
+  // implementation would regroup/relabel onto the wrong day on a Manila box.
+  it("keeps an evening transaction on its own wall-clock day and label", () => {
+    // 7:00 PM Jul 27 as stored. A local Manila interpretation (19:00 -> 03:00
+    // next day) would push it to Jul 28.
+    const groups = groupTransactions([row({ occurred_at: "2026-07-27T19:00:00Z" })], "daily");
+    expect(groups).toHaveLength(1);
+    expect(groups[0].key).toBe("2026-07-27");
+    expect(groups[0].label).toBe("Jul 27, 2026");
+  });
+
+  it("groups a late-evening transaction into the correct month", () => {
+    // 11:30 PM on the last day of July, stored wall-clock. Must be July, not
+    // August (which a +8h local shift would produce).
+    const groups = groupTransactions([row({ occurred_at: "2026-07-31T23:30:00Z" })], "monthly");
+    expect(groups[0].key).toBe("2026-07");
+    expect(groups[0].label).toBe("July 2026");
+  });
 });
