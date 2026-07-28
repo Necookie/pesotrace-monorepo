@@ -16,7 +16,10 @@ function escapeCsv(value: string | number | null): string {
 function formatTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
+  // occurred_at is a Manila wall-clock time stored under a UTC label — pin the
+  // zone to UTC so the exported time is the receipt's time, not one shifted by
+  // whatever timezone the export server happens to run in.
+  return d.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit", timeZone: "UTC" });
 }
 
 /**
