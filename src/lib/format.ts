@@ -6,6 +6,14 @@ export function formatPeso(amount: number): string {
   }).format(amount);
 }
 
+// Transaction timestamps (occurred_at) hold the receipt's Manila wall-clock
+// time stored under a UTC label — 7:00 PM is "...T19:00:00Z". Formatting must
+// therefore pin the zone to UTC to render those exact digits back (7:00 PM);
+// leaving it unset renders in the server's own timezone, which on a Manila
+// machine shifts every time +8h (7:00 PM shows as 3:00 AM). Pinning makes the
+// output identical on any host.
+const DISPLAY_TIME_ZONE = "UTC";
+
 export function formatDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -14,6 +22,7 @@ export function formatDateTime(iso: string): string {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: DISPLAY_TIME_ZONE,
   }).format(d);
 }
 
@@ -47,5 +56,6 @@ export function formatDate(iso: string): string {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: DISPLAY_TIME_ZONE,
   }).format(d);
 }
