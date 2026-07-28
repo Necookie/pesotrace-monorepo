@@ -377,3 +377,63 @@ export async function listAuditLog(
     createdAt: e.created_at,
   }));
 }
+
+export type StoreReceiptRow = {
+  transaction: Database["public"]["Tables"]["transactions"]["Row"];
+  /** Signed URL to the uploaded receipt, or null for statement/manual rows. */
+  receiptUrl: string | null;
+};
+
+/**
+ * A store's transactions paired with a signed URL to the receipt each was
+ * extracted from, for an operator to verify the parsed fields against the
+ * original image. Uses the admin (service-role) client, so it reads across
+ * stores — callers must already be gated to platform operators.
+ *
+ * Receipt URLs are signed in one batch rather than per row, and given a
+ * generous expiry so an operator can open a full-size image in a new tab
+ * minutes after the page loaded.
+ */
+export async function getStoreTransactionsWithReceipts(
+  supabase: SupabaseClient<Database>,
+  storeId: string,
+  limit = 20,
+  offset = 0
+): Promise<{ rows: StoreReceiptRow[]; hasMore: boolean }> {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("store_id", storeId)
+    .order("occurred_at", { ascending: false })
+    .range(offset, offset + limit);
+
+  if (error) throw error;
+
+  const fetched = data ?? [];
+  const hasMore = fetched.length > limit;
+  const page = hasMore ? fetched.slice(0, limit) : fetched;
+
+  const paths = page
+    .map((t) => t.source_file_url)
+    .filter((p): p is string => Boolean(p));
+
+  const signedByPath = new Map<string, string>();
+  if (paths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("transaction-sources")
+      .createSignedUrls(paths, 60 * 60);
+    for (const item of signed ?? []) {
+      if (item.signedUrl && item.path) signedByPath.set(item.path, item.signedUrl);
+    }
+  }
+
+  return {
+    rows: page.map((transaction) => ({
+      transaction,
+      receiptUrl: transaction.source_file_url
+        ? signedByPath.get(transaction.source_file_url) ?? null
+        : null,
+    })),
+    hasMore,
+  };
+}
