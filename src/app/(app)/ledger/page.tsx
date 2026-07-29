@@ -7,7 +7,7 @@ import { ExportDialog } from "@/components/ledger/export-dialog";
 import { Pagination } from "@/components/ui/pagination";
 import { TransactionDetailSheet } from "./transaction-detail-sheet";
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 50;
 
 export default async function LedgerPage({
   searchParams,
