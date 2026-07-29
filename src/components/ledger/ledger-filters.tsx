@@ -32,6 +32,9 @@ export function LedgerFilters() {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value);
     else params.delete(key);
+    // Any filter change resets to the first page — page 3 of the old result
+    // set may not exist in the new one.
+    params.delete("page");
     startTransition(() => router.push(`/ledger?${params.toString()}`));
   }
 
