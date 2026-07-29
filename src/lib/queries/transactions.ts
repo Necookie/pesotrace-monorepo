@@ -14,6 +14,8 @@ export type TransactionFilters = {
 export type TransactionListPage = {
   rows: Database["public"]["Tables"]["transactions"]["Row"][];
   hasMore: boolean;
+  /** Total matching rows across all pages (respects filters), for page numbers. */
+  total: number;
 };
 
 export async function listTransactions(
@@ -25,7 +27,7 @@ export async function listTransactions(
 ): Promise<TransactionListPage> {
   let query = supabase
     .from("transactions")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("store_id", storeId)
     .order("occurred_at", { ascending: false });
 
@@ -45,12 +47,12 @@ export async function listTransactions(
     );
   }
 
-  // Fetch one extra row past the page limit to know whether there's a next
-  // page, without a separate count(*) query.
-  const { data, error } = await query.range(offset, offset + limit);
+  // Fetch one extra row past the page limit to derive hasMore cheaply; the
+  // exact count drives the numbered page controls.
+  const { data, error, count } = await query.range(offset, offset + limit);
   if (error) throw error;
 
-  return paginateRows(data ?? [], limit);
+  return { ...paginateRows(data ?? [], limit), total: count ?? 0 };
 }
 
 // The reports page loads up to 5,000 rows so its client-side date picker can
