@@ -8,6 +8,23 @@ import {
 } from "@/lib/fee-formula";
 
 /**
+ * Sorted-tier cache keyed by array identity. A bulk statement import calls
+ * matchTier once per row against the same config object — caching the sorted
+ * copy by reference avoids re-sorting on every call. WeakRef lets the GC
+ * collect the original array if it's ever replaced (e.g. after a settings
+ * save), so the cache doesn't keep stale configs alive.
+ */
+const sortedTierCache = new WeakMap<FeeTierConfig, FeeTier[]>();
+
+function getSortedTiers(feeTierConfig: FeeTierConfig): FeeTier[] {
+  const cached = sortedTierCache.get(feeTierConfig);
+  if (cached) return cached;
+  const sorted = [...feeTierConfig].sort((a, b) => a.min - b.min);
+  sortedTierCache.set(feeTierConfig, sorted);
+  return sorted;
+}
+
+/**
  * Finds the tier that applies to `amount`.
  *
  * `max` is INCLUSIVE, matching how fee boards are actually written and how the
@@ -22,7 +39,7 @@ import {
  * than to the first tier in the array.
  */
 export function matchTier(amount: number, feeTierConfig: FeeTierConfig): FeeTier | undefined {
-  const byMin = [...feeTierConfig].sort((a, b) => a.min - b.min);
+  const byMin = getSortedTiers(feeTierConfig);
 
   const covering = byMin.find((t) => amount >= t.min && (t.max === null || amount <= t.max));
   if (covering) return covering;
