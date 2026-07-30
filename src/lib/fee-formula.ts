@@ -37,27 +37,17 @@ type TokenType = "number" | "string" | "ident" | "op" | "eof";
 
 type Token = { type: TokenType; value: string; pos: number };
 
-const OPERATORS = [
-  "<=",
-  ">=",
-  "==",
-  "!=",
-  "&&",
-  "||",
-  "<",
-  ">",
-  "+",
-  "-",
-  "*",
-  "/",
-  "%",
-  "(",
-  ")",
-  ",",
-  "?",
-  ":",
-  "!",
-];
+/**
+ * Two-tier operator lookup for O(1) token recognition.
+ *
+ * The old OPERATORS.find() scanned up to 19 entries on every operator
+ * character. Splitting into a 2-char Set and a 1-char Set means most tokens
+ * hit the fast path in two hash lookups instead of a linear scan — relevant
+ * when validating formulas in bulk (the probe set exercises every
+ * direction/category combination across 15 amounts).
+ */
+const TWO_CHAR_OPS = new Set(["<=", ">=", "==", "!=", "&&", "||"]);
+const ONE_CHAR_OPS = new Set(["+", "-", "*", "/", "%", "(", ")", ",", "?", ":", "!", "<", ">"]);
 
 function tokenize(source: string): Token[] {
   const tokens: Token[] = [];
@@ -105,10 +95,17 @@ function tokenize(source: string): Token[] {
       continue;
     }
 
-    const op = OPERATORS.find((candidate) => source.startsWith(candidate, i));
-    if (op) {
-      tokens.push({ type: "op", value: op, pos: i });
-      i += op.length;
+    // Two-tier O(1) operator lookup: try the 2-char slice first, then the
+    // single char. This replaces the former linear OPERATORS.find() scan.
+    const twoChar = source.slice(i, i + 2);
+    if (TWO_CHAR_OPS.has(twoChar)) {
+      tokens.push({ type: "op", value: twoChar, pos: i });
+      i += 2;
+      continue;
+    }
+    if (ONE_CHAR_OPS.has(char)) {
+      tokens.push({ type: "op", value: char, pos: i });
+      i += 1;
       continue;
     }
 

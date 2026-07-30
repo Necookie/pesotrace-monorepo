@@ -7,11 +7,23 @@ describe("computeExtractionCost", () => {
     const result = computeExtractionCost({ promptTokenCount: 1087, candidatesTokenCount: 111 });
     expect(result.inputTokens).toBe(1087);
     expect(result.outputTokens).toBe(111);
+    // totalTokenCount omitted — should fall back to input + output.
+    expect(result.totalTokens).toBe(1087 + 111);
     expect(result.costUsd).toBeCloseTo(1087 * (0.25 / 1_000_000) + 111 * (1.5 / 1_000_000), 10);
   });
 
   it("returns zero cost when usage metadata is missing", () => {
     const result = computeExtractionCost(undefined);
-    expect(result).toEqual({ inputTokens: 0, outputTokens: 0, costUsd: 0 });
+    expect(result).toEqual({ inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0 });
+  });
+
+  it("uses totalTokenCount when provided", () => {
+    const result = computeExtractionCost({
+      promptTokenCount: 100,
+      candidatesTokenCount: 50,
+      totalTokenCount: 160,
+    });
+    // totalTokenCount takes precedence over the computed sum (100 + 50 = 150).
+    expect(result.totalTokens).toBe(160);
   });
 });
