@@ -16,15 +16,23 @@ export type UsageMetadata = {
 export type ExtractionCost = {
   inputTokens: number;
   outputTokens: number;
+  /**
+   * Derived from totalTokenCount when present; otherwise computed as
+   * inputTokens + outputTokens. Some API plan tiers omit totalTokenCount
+   * from the response — the fallback ensures callers always get a useful
+   * number for display and budget tracking.
+   */
+  totalTokens: number;
   costUsd: number;
 };
 
 export function computeExtractionCost(usage: UsageMetadata | undefined): ExtractionCost {
   const inputTokens = usage?.promptTokenCount ?? 0;
   const outputTokens = usage?.candidatesTokenCount ?? 0;
+  const totalTokens = usage?.totalTokenCount ?? inputTokens + outputTokens;
   const costUsd =
     (inputTokens / 1_000_000) * INPUT_COST_PER_MILLION_USD +
     (outputTokens / 1_000_000) * OUTPUT_COST_PER_MILLION_USD;
 
-  return { inputTokens, outputTokens, costUsd };
+  return { inputTokens, outputTokens, totalTokens, costUsd };
 }
