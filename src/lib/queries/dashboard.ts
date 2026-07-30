@@ -101,13 +101,16 @@ export function dailyIncomeFromRows(
 }
 
 function summarize(rows: DashboardRow[]) {
+  if (rows.length === 0) {
+    return { totalVolume: 0, transactionCount: 0, feesEarned: 0, avgSize: 0 };
+  }
   const totalVolume = rows.reduce((sum, r) => sum + Number(r.amount), 0);
   const feesEarned = rows.reduce((sum, r) => sum + Number(r.fee_computed), 0);
   return {
     totalVolume,
     transactionCount: rows.length,
     feesEarned,
-    avgSize: rows.length > 0 ? totalVolume / rows.length : 0,
+    avgSize: totalVolume / rows.length,
   };
 }
 
