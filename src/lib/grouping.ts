@@ -76,24 +76,27 @@ export function groupTransactions<T extends GroupableRow>(
   for (const row of rows) {
     const { key, label } = groupKey(row.occurred_at, period);
     const existing = groups.get(key);
+    // Coerce once — row.amount may be a string from the DB row type and
+    // repeated Number() calls on the same value inside the hot loop are wasteful.
     const amount = Number(row.amount);
-    const signedAmount = row.direction === "receive" ? amount : -amount;
-    const send = row.direction === "send" ? amount : 0;
-    const receive = row.direction === "receive" ? amount : 0;
+    const isSend = row.direction === "send";
+    const signedAmount = isSend ? -amount : amount;
+    const sendAmount = isSend ? amount : 0;
+    const receiveAmount = isSend ? 0 : amount;
 
     if (existing) {
       existing.rows.push(row);
       existing.netTotal += signedAmount;
-      existing.sendTotal += send;
-      existing.receiveTotal += receive;
+      existing.sendTotal += sendAmount;
+      existing.receiveTotal += receiveAmount;
     } else {
       groups.set(key, {
         key,
         label,
         rows: [row],
         netTotal: signedAmount,
-        sendTotal: send,
-        receiveTotal: receive,
+        sendTotal: sendAmount,
+        receiveTotal: receiveAmount,
       });
     }
   }
