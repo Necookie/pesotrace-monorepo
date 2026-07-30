@@ -1,9 +1,14 @@
+// Intl formatter construction is measurably expensive on each call in hot
+// paths like the ledger page (100+ rows rendered). All formatters are
+// constructed once at module load and reused for the process lifetime.
+const pesoFormatter = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 2,
+});
+
 export function formatPeso(amount: number): string {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-  }).format(amount);
+  return pesoFormatter.format(amount);
 }
 
 // Transaction timestamps (occurred_at) hold the receipt's Manila wall-clock
@@ -14,16 +19,18 @@ export function formatPeso(amount: number): string {
 // output identical on any host.
 const DISPLAY_TIME_ZONE = "UTC";
 
+const dateTimeFormatter = new Intl.DateTimeFormat("en-PH", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: DISPLAY_TIME_ZONE,
+});
+
 export function formatDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: DISPLAY_TIME_ZONE,
-  }).format(d);
+  return dateTimeFormatter.format(d);
 }
 
 /**
@@ -49,13 +56,15 @@ export function formatPesoCompact(amount: number): string {
   return `₱${amount.toFixed(0)}`;
 }
 
+const dateFormatter = new Intl.DateTimeFormat("en-PH", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  timeZone: DISPLAY_TIME_ZONE,
+});
+
 export function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("en-PH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone: DISPLAY_TIME_ZONE,
-  }).format(d);
+  return dateFormatter.format(d);
 }
