@@ -62,5 +62,9 @@ export function transactionsToCsv(rows: Row[]): string {
       .join(",");
   });
 
-  return [header.join(","), ...lines].join("\n");
+  // Prepend the UTF-8 BOM (\uFEFF) so Excel and Google Sheets auto-detect the
+  // encoding and render Philippine names / special characters correctly without
+  // requiring the import wizard. The BOM is invisible in every modern editor
+  // and has no effect on programmatic consumers that read UTF-8 by default.
+  return "\uFEFF" + [header.join(","), ...lines].join("\n");
 }
