@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Wallet, Zap, CalendarDays } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getStoreCreditDetail,
@@ -19,7 +19,7 @@ import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
 import { StoreReceiptVerification } from "@/components/admin/store-receipt-verification";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
-import { KpiTile } from "@/components/dashboard/kpi-tile";
+import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -80,19 +80,19 @@ export default async function AdminStoreDetailPage({
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-hairline bg-canvas p-4 sm:p-6">
-          <p className="text-xs text-muted sm:text-sm">Credit balance</p>
-          <p
-            className={cn(
-              "mt-1.5 font-mono text-lg font-semibold sm:text-2xl",
-              detail.balance <= 0 ? "text-down" : "text-ink"
-            )}
-          >
-            {detail.balance.toLocaleString()}
-          </p>
-        </div>
-        <KpiTile label="Requests today" value={String(detail.requestsToday)} />
-        <KpiTile label="Requests this week" value={String(detail.requestsThisWeek)} />
+        <AdminKpiTile
+          label="Credit balance"
+          value={detail.balance.toLocaleString()}
+          icon={Wallet}
+          accent={detail.balance <= 0 ? "down" : "up"}
+        />
+        <AdminKpiTile label="Requests today" value={String(detail.requestsToday)} icon={Zap} accent="primary" />
+        <AdminKpiTile
+          label="Requests this week"
+          value={String(detail.requestsThisWeek)}
+          icon={CalendarDays}
+          accent="primary"
+        />
       </div>
 
       <StoreReceiptVerification

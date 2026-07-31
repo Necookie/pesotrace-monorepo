@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Store, Zap, Wallet, DollarSign, AlertTriangle } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listStoresWithCredits, listPendingCreditRequests } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -6,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { CreditUsageChart } from "@/components/charts/lazy";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
-import { KpiTile } from "@/components/dashboard/kpi-tile";
+import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
 import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 
@@ -28,11 +29,26 @@ export default async function AdminOverviewPage() {
       <p className="mt-1 text-sm text-body">Credit balances and usage across every store.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <KpiTile label="Stores" value={String(stores.length)} />
-        <KpiTile label="Requests today" value={String(requestsToday)} />
-        <KpiTile label="Total credit balance" value={totalBalance.toLocaleString()} />
-        <KpiTile label="Real cost (30d)" value={formatExtractionCost(totalCost30d)} />
-        <KpiTile label="Out of credits" value={String(storesOutOfCredits)} />
+        <AdminKpiTile label="Stores" value={String(stores.length)} icon={Store} accent="primary" />
+        <AdminKpiTile label="Requests today" value={String(requestsToday)} icon={Zap} accent="primary" />
+        <AdminKpiTile
+          label="Total credit balance"
+          value={totalBalance.toLocaleString()}
+          icon={Wallet}
+          accent="up"
+        />
+        <AdminKpiTile
+          label="Real cost (30d)"
+          value={formatExtractionCost(totalCost30d)}
+          icon={DollarSign}
+          accent="muted"
+        />
+        <AdminKpiTile
+          label="Out of credits"
+          value={String(storesOutOfCredits)}
+          icon={AlertTriangle}
+          accent={storesOutOfCredits > 0 ? "down" : "muted"}
+        />
       </div>
 
       <div className="mt-6">
