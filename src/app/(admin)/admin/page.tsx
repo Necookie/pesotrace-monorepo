@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { Store, Zap, Wallet, DollarSign, AlertTriangle } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listStoresWithCredits, listPendingCreditRequests, getPlatformUsageTrend } from "@/lib/queries/admin";
+import {
+  listStoresWithCredits,
+  listPendingCreditRequests,
+  getPlatformUsageTrend,
+  type AdminStoreRow,
+} from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
@@ -11,6 +16,32 @@ import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
 import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 import { StoreSearch } from "@/components/admin/store-search";
+import { SortableHeader } from "@/components/admin/sortable-header";
+
+type SortKey = "name" | "balance" | "today" | "extractions" | "cost" | "activity";
+
+const SORT_ACCESSORS: Record<SortKey, (s: AdminStoreRow) => number | string> = {
+  name: (s) => s.storeName.toLowerCase(),
+  balance: (s) => s.balance,
+  today: (s) => s.requestsToday,
+  extractions: (s) => s.extractionsThisMonth,
+  cost: (s) => s.costUsdThisMonth,
+  activity: (s) => s.lastActivityAt ?? "",
+};
+
+function sortStores(stores: AdminStoreRow[], sort: string | undefined, dir: string | undefined) {
+  const key: SortKey = sort && sort in SORT_ACCESSORS ? (sort as SortKey) : "name";
+  const direction = dir === "desc" ? -1 : 1;
+  const accessor = SORT_ACCESSORS[key];
+
+  return [...stores].sort((a, b) => {
+    const av = accessor(a);
+    const bv = accessor(b);
+    if (av < bv) return -1 * direction;
+    if (av > bv) return 1 * direction;
+    return 0;
+  });
+}
 
 export default async function AdminOverviewPage({
   searchParams,
@@ -26,9 +57,18 @@ export default async function AdminOverviewPage({
   ]);
 
   const query = (params.q ?? "").trim().toLowerCase();
-  const stores = query
+  const filteredStores = query
     ? allStores.filter((s) => s.storeName.toLowerCase().includes(query))
     : allStores;
+  const stores = sortStores(filteredStores, params.sort, params.dir);
+
+  const headerParams = new URLSearchParams(
+    Object.entries(params).filter(
+      (entry): entry is [string, string] => entry[0] !== "sort" && entry[0] !== "dir" && entry[1] !== undefined
+    )
+  );
+  const activeSort = params.sort ?? "name";
+  const activeDir: "asc" | "desc" = params.dir === "desc" ? "desc" : "asc";
 
   const totalBalance = allStores.reduce((sum, s) => sum + s.balance, 0);
   const totalCost30d = allStores.reduce((sum, s) => sum + s.costUsdThisMonth, 0);
@@ -84,14 +124,26 @@ export default async function AdminOverviewPage({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="py-3 pl-4">Store</TableHead>
+              <TableHead className="py-3 pl-4">
+                <SortableHeader label="Store" sortKey="name" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} />
+              </TableHead>
               <TableHead className="py-3">Fee setup</TableHead>
-              <TableHead className="py-3 text-right">Credit balance</TableHead>
-              <TableHead className="py-3 text-right">Today</TableHead>
-              <TableHead className="py-3 text-right">Extractions (30d)</TableHead>
-              <TableHead className="py-3 text-right">Real cost (30d)</TableHead>
+              <TableHead className="py-3 text-right">
+                <SortableHeader label="Credit balance" sortKey="balance" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
+              </TableHead>
+              <TableHead className="py-3 text-right">
+                <SortableHeader label="Today" sortKey="today" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
+              </TableHead>
+              <TableHead className="py-3 text-right">
+                <SortableHeader label="Extractions (30d)" sortKey="extractions" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
+              </TableHead>
+              <TableHead className="py-3 text-right">
+                <SortableHeader label="Real cost (30d)" sortKey="cost" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
+              </TableHead>
               <TableHead className="py-3">Usage trend</TableHead>
-              <TableHead className="py-3 text-right">Last activity</TableHead>
+              <TableHead className="py-3 text-right">
+                <SortableHeader label="Last activity" sortKey="activity" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
+              </TableHead>
               <TableHead className="w-10 py-3 pr-4" />
             </TableRow>
           </TableHeader>
