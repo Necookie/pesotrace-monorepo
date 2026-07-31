@@ -14,6 +14,7 @@ import { CreditUsageChart } from "@/components/charts/lazy";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
+import { QuickAdjustCreditsDialog } from "@/components/admin/quick-adjust-credits-dialog";
 import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 import { StoreSearch } from "@/components/admin/store-search";
 import { SortableHeader } from "@/components/admin/sortable-header";
@@ -144,7 +145,7 @@ export default async function AdminOverviewPage({
               <TableHead className="py-3 text-right">
                 <SortableHeader label="Last activity" sortKey="activity" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
               </TableHead>
-              <TableHead className="w-10 py-3 pr-4" />
+              <TableHead className="w-20 py-3 pr-4" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -190,7 +191,10 @@ export default async function AdminOverviewPage({
                   {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "—"}
                 </TableCell>
                 <TableCell className="py-3 pr-4">
-                  <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
+                  <div className="flex items-center justify-end">
+                    <QuickAdjustCreditsDialog storeId={store.storeId} storeName={store.storeName} />
+                    <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -229,7 +233,10 @@ export default async function AdminOverviewPage({
                   </span>
                 )}
               </div>
-              <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
+              <div className="flex shrink-0 items-center">
+                <QuickAdjustCreditsDialog storeId={store.storeId} storeName={store.storeName} />
+                <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
+              </div>
             </div>
 
             <div className="mt-3">
