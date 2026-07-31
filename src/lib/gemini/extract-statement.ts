@@ -99,7 +99,7 @@ export async function extractStatementFromPdf(
     return {
       ok: false,
       error: e instanceof Error ? e.message : "Statement extraction failed.",
-      cost: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+      cost: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0 },
     };
   }
 }
