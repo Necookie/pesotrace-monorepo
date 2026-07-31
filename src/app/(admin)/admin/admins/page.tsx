@@ -1,6 +1,8 @@
+import { ShieldCheck, KeyRound } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatDateTime } from "@/lib/format";
 import { AdminsPanel } from "@/components/admin/admins-panel";
+import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 
 export default async function PlatformAdminsPage() {
   const supabase = createAdminClient();
@@ -18,6 +20,21 @@ export default async function PlatformAdminsPage() {
     <div>
       <h1 className="text-2xl font-medium text-ink">Platform admins</h1>
       <p className="mt-1 text-sm text-body">Who can access this admin dashboard.</p>
+
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:max-w-md">
+        <AdminKpiTile
+          label="DB-managed admins"
+          value={String(admins?.length ?? 0)}
+          icon={ShieldCheck}
+          accent="primary"
+        />
+        <AdminKpiTile
+          label="Env bootstrap admins"
+          value={String(bootstrapIds.length)}
+          icon={KeyRound}
+          accent="muted"
+        />
+      </div>
 
       {bootstrapIds.length > 0 && (
         <div className="mt-6 rounded-2xl border border-hairline bg-surface-soft p-4 sm:p-6">

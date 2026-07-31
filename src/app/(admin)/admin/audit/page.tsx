@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ScrollText } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAuditLog } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import type { AdminActionType } from "@/lib/database.types";
 
 const ACTION_LABEL: Record<AdminActionType, string> = {
@@ -36,6 +38,10 @@ export default async function AdminAuditLogPage() {
     <div>
       <h1 className="text-2xl font-medium text-ink">Audit log</h1>
       <p className="mt-1 text-sm text-body">Every platform-admin action, most recent first.</p>
+
+      <div className="mt-6 max-w-xs">
+        <AdminKpiTile label="Logged actions" value={String(entries.length)} icon={ScrollText} accent="primary" />
+      </div>
 
       {/* Desktop: table */}
       <div className="mt-6 hidden overflow-hidden rounded-2xl border border-hairline md:block">
