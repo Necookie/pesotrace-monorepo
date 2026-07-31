@@ -149,7 +149,10 @@ export default async function AdminOverviewPage({
           </TableHeader>
           <TableBody>
             {stores.map((store) => (
-              <TableRow key={store.storeId}>
+              <TableRow
+                key={store.storeId}
+                className={cn(store.balance <= 0 && "border-l-2 border-l-down bg-down/5")}
+              >
                 <TableCell className="py-3 pl-4">
                   <Link href={`/admin/stores/${store.storeId}`} className="font-medium text-ink hover:text-primary">
                     {store.storeName}
@@ -205,7 +208,13 @@ export default async function AdminOverviewPage({
       {/* Mobile: stacked cards */}
       <div className="flex flex-col gap-3 md:hidden">
         {stores.map((store) => (
-          <div key={store.storeId} className="rounded-2xl border border-hairline p-4">
+          <div
+            key={store.storeId}
+            className={cn(
+              "rounded-2xl border border-hairline p-4",
+              store.balance <= 0 && "border-l-2 border-l-down bg-down/5"
+            )}
+          >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <Link
