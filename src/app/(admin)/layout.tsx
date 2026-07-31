@@ -1,27 +1,26 @@
 import Link from "next/link";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { LogoMark } from "@/components/brand/logo";
+import { AdminNav } from "@/components/admin/admin-nav";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requirePlatformAdmin();
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
-      <header className="sticky top-0 z-40 flex h-16 items-center border-b border-hairline bg-canvas px-4 sm:px-6">
-        <Link href="/admin" className="flex items-center gap-2 text-lg font-semibold text-ink">
+      <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-hairline bg-canvas px-4 sm:px-6">
+        <Link href="/admin" className="flex shrink-0 items-center gap-2 text-lg font-semibold text-ink">
           <LogoMark size={22} className="text-primary" />
-          PesoTrace Admin
+          <span className="hidden sm:inline">PesoTrace Admin</span>
         </Link>
-        <span className="ml-3 rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium text-muted">
+        <span className="hidden shrink-0 rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium text-muted lg:inline-block">
           Platform operator
         </span>
-        <Link href="/admin/audit" className="ml-6 text-sm font-medium text-body hover:text-ink">
-          Audit log
-        </Link>
-        <Link href="/admin/admins" className="ml-6 text-sm font-medium text-body hover:text-ink">
-          Admins
-        </Link>
-        <Link href="/dashboard" className="ml-auto text-sm font-medium text-body hover:text-ink">
+        <AdminNav />
+        <Link
+          href="/dashboard"
+          className="ml-auto shrink-0 text-sm font-medium text-body hover:text-ink"
+        >
           Back to app
         </Link>
       </header>
