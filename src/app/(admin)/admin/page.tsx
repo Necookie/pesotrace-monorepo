@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Store, Zap, Wallet, DollarSign, AlertTriangle } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listStoresWithCredits, listPendingCreditRequests } from "@/lib/queries/admin";
+import { listStoresWithCredits, listPendingCreditRequests, getPlatformUsageTrend } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
@@ -13,9 +13,10 @@ import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 
 export default async function AdminOverviewPage() {
   const supabase = createAdminClient();
-  const [stores, pendingRequests] = await Promise.all([
+  const [stores, pendingRequests, platformUsageTrend] = await Promise.all([
     listStoresWithCredits(supabase),
     listPendingCreditRequests(supabase),
+    getPlatformUsageTrend(supabase),
   ]);
 
   const totalBalance = stores.reduce((sum, s) => sum + s.balance, 0);
@@ -49,6 +50,11 @@ export default async function AdminOverviewPage() {
           icon={AlertTriangle}
           accent={storesOutOfCredits > 0 ? "down" : "muted"}
         />
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Platform usage trend (30d)</h2>
+        <CreditUsageChart data={platformUsageTrend} />
       </div>
 
       <div className="mt-6">
