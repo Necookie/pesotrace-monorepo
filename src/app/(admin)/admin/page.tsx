@@ -10,19 +10,30 @@ import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
 import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
+import { StoreSearch } from "@/components/admin/store-search";
 
-export default async function AdminOverviewPage() {
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
+  const params = await searchParams;
   const supabase = createAdminClient();
-  const [stores, pendingRequests, platformUsageTrend] = await Promise.all([
+  const [allStores, pendingRequests, platformUsageTrend] = await Promise.all([
     listStoresWithCredits(supabase),
     listPendingCreditRequests(supabase),
     getPlatformUsageTrend(supabase),
   ]);
 
-  const totalBalance = stores.reduce((sum, s) => sum + s.balance, 0);
-  const totalCost30d = stores.reduce((sum, s) => sum + s.costUsdThisMonth, 0);
-  const storesOutOfCredits = stores.filter((s) => s.balance <= 0).length;
-  const requestsToday = stores.reduce((sum, s) => sum + s.requestsToday, 0);
+  const query = (params.q ?? "").trim().toLowerCase();
+  const stores = query
+    ? allStores.filter((s) => s.storeName.toLowerCase().includes(query))
+    : allStores;
+
+  const totalBalance = allStores.reduce((sum, s) => sum + s.balance, 0);
+  const totalCost30d = allStores.reduce((sum, s) => sum + s.costUsdThisMonth, 0);
+  const storesOutOfCredits = allStores.filter((s) => s.balance <= 0).length;
+  const requestsToday = allStores.reduce((sum, s) => sum + s.requestsToday, 0);
 
   return (
     <div>
@@ -61,7 +72,12 @@ export default async function AdminOverviewPage() {
         <TrialRequestsPanel requests={pendingRequests} />
       </div>
 
-      <h2 className="mb-3 text-sm font-semibold text-ink">All stores</h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-ink">
+          All stores <span className="font-normal text-muted">({stores.length})</span>
+        </h2>
+        <StoreSearch />
+      </div>
 
       {/* Desktop: table */}
       <div className="hidden overflow-hidden rounded-2xl border border-hairline md:block">
@@ -126,7 +142,7 @@ export default async function AdminOverviewPage() {
             {stores.length === 0 && (
               <TableRow>
                 <TableCell colSpan={9} className="py-10 text-center text-muted">
-                  No stores yet.
+                  {query ? `No stores match "${params.q}".` : "No stores yet."}
                 </TableCell>
               </TableRow>
             )}
@@ -190,7 +206,9 @@ export default async function AdminOverviewPage() {
           </div>
         ))}
         {stores.length === 0 && (
-          <div className="rounded-2xl border border-hairline py-10 text-center text-muted">No stores yet.</div>
+          <div className="rounded-2xl border border-hairline py-10 text-center text-muted">
+            {query ? `No stores match "${params.q}".` : "No stores yet."}
+          </div>
         )}
       </div>
     </div>
