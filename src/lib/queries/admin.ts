@@ -4,12 +4,11 @@ import type { Database, CreditEntryType, TransactionSource, AdminActionType, Jso
 import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
 import type { RequestVolumePoint } from "@/components/charts/request-volume-chart";
 import { formatDate } from "@/lib/format";
-import { paginateRows } from "@/lib/pagination";
 import { summarizeFeeConfig, type FeeConfigSummary } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { storeDayKey, storeToday } from "@/lib/time";
 
-const LEDGER_HISTORY_LIMIT = 200;
+const LEDGER_HISTORY_LIMIT = 25;
 const ANALYTICS_WINDOW_DAYS = 30;
 
 export type StoreAnalytics = {
@@ -84,7 +83,8 @@ export type AdminStoreDetail = {
   storeName: string;
   balance: number;
   ledger: CreditLedgerEntry[];
-  ledgerHasMore: boolean;
+  /** Total rows matching the current entry-type filter, for page numbers. */
+  ledgerTotal: number;
   requestsToday: number;
   requestsThisWeek: number;
   dailyRequestCounts: RequestVolumePoint[];
@@ -94,24 +94,27 @@ export type AdminStoreDetail = {
 export async function getStoreCreditDetail(
   supabase: SupabaseClient<Database>,
   storeId: string,
-  ledgerOffset = 0
+  ledgerOffset = 0,
+  entryType?: CreditEntryType
 ): Promise<AdminStoreDetail | null> {
+  let ledgerQuery = supabase
+    .from("credit_ledger")
+    .select("id, entry_type, credit_delta, cost_usd, source_type, note, created_by, created_at", {
+      count: "exact",
+    })
+    .eq("store_id", storeId)
+    .order("created_at", { ascending: false });
+  if (entryType) ledgerQuery = ledgerQuery.eq("entry_type", entryType);
+
   const [
     { data: store, error: storeError },
     { data: credit, error: creditError },
-    { data: ledgerPage, error: ledgerError },
+    { data: ledgerPage, error: ledgerError, count: ledgerCount },
     analytics,
   ] = await Promise.all([
     supabase.from("stores").select("id, name").eq("id", storeId).maybeSingle(),
     supabase.from("store_credits").select("balance").eq("store_id", storeId).maybeSingle(),
-    supabase
-      .from("credit_ledger")
-      .select("id, entry_type, credit_delta, cost_usd, source_type, note, created_by, created_at")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false })
-      // Fetch one extra row past the page to know if there's a next page,
-      // without a separate count(*) query.
-      .range(ledgerOffset, ledgerOffset + LEDGER_HISTORY_LIMIT),
+    ledgerQuery.range(ledgerOffset, ledgerOffset + LEDGER_HISTORY_LIMIT - 1),
     getStoreAnalytics(supabase, storeId),
   ]);
 
@@ -120,13 +123,11 @@ export async function getStoreCreditDetail(
   if (ledgerError) throw ledgerError;
   if (!store) return null;
 
-  const { rows: ledger, hasMore: ledgerHasMore } = paginateRows(ledgerPage ?? [], LEDGER_HISTORY_LIMIT);
-
   return {
     storeId: store.id,
     storeName: store.name,
     balance: credit?.balance ?? 0,
-    ledger: ledger.map((entry) => ({
+    ledger: (ledgerPage ?? []).map((entry) => ({
       id: entry.id,
       entryType: entry.entry_type,
       creditDelta: entry.credit_delta,
@@ -136,7 +137,7 @@ export async function getStoreCreditDetail(
       createdBy: entry.created_by,
       createdAt: entry.created_at,
     })),
-    ledgerHasMore,
+    ledgerTotal: ledgerCount ?? 0,
     requestsToday: analytics.requestsToday,
     requestsThisWeek: analytics.requestsThisWeek,
     dailyRequestCounts: analytics.dailyRequestCounts,
