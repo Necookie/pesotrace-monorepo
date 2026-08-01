@@ -20,6 +20,8 @@ import { StoreFeeHistory } from "@/components/admin/store-fee-history";
 import { StoreReceiptVerification } from "@/components/admin/store-receipt-verification";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
+import { Pagination } from "@/components/ui/pagination";
+import type { CreditEntryType } from "@/lib/database.types";
 
 const ENTRY_TYPE_LABEL: Record<string, string> = {
   grant: "Grant",
@@ -35,7 +37,15 @@ const ENTRY_TYPE_TEXT_COLOR: Record<string, string> = {
   refund: "text-up",
 };
 
-const LEDGER_PAGE_SIZE = 200;
+const ENTRY_TYPE_FILTERS: { value: CreditEntryType | undefined; label: string }[] = [
+  { value: undefined, label: "All" },
+  { value: "grant", label: "Grant" },
+  { value: "consumption", label: "Consumption" },
+  { value: "adjustment", label: "Adjustment" },
+  { value: "refund", label: "Refund" },
+];
+
+const LEDGER_PAGE_SIZE = 25;
 const RECEIPT_PAGE_SIZE = 12;
 
 export default async function AdminStoreDetailPage({
@@ -43,16 +53,19 @@ export default async function AdminStoreDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ ledgerOffset?: string; receiptOffset?: string }>;
+  searchParams: Promise<{ ledgerPage?: string; ledgerType?: string; receiptOffset?: string }>;
 }) {
   const { id } = await params;
-  const { ledgerOffset: ledgerOffsetParam, receiptOffset: receiptOffsetParam } =
+  const { ledgerPage: ledgerPageParam, ledgerType: ledgerTypeParam, receiptOffset: receiptOffsetParam } =
     await searchParams;
-  const ledgerOffset = Math.max(0, Number(ledgerOffsetParam) || 0);
+  const ledgerPage = Math.max(1, Number(ledgerPageParam) || 1);
+  const ledgerType =
+    ledgerTypeParam && ledgerTypeParam in ENTRY_TYPE_LABEL ? (ledgerTypeParam as CreditEntryType) : undefined;
+  const ledgerOffset = (ledgerPage - 1) * LEDGER_PAGE_SIZE;
   const receiptOffset = Math.max(0, Number(receiptOffsetParam) || 0);
 
   const supabase = createAdminClient();
-  const detail = await getStoreCreditDetail(supabase, id, ledgerOffset);
+  const detail = await getStoreCreditDetail(supabase, id, ledgerOffset, ledgerType);
 
   if (!detail) notFound();
 
@@ -62,9 +75,20 @@ export default async function AdminStoreDetailPage({
     getStoreTransactionsWithReceipts(supabase, id, RECEIPT_PAGE_SIZE, receiptOffset),
   ]);
 
+  const ledgerTotalPages = Math.max(1, Math.ceil(detail.ledgerTotal / LEDGER_PAGE_SIZE));
+
   const receiptMoreParams = new URLSearchParams();
   receiptMoreParams.set("receiptOffset", String(receiptOffset + RECEIPT_PAGE_SIZE));
-  if (ledgerOffset) receiptMoreParams.set("ledgerOffset", String(ledgerOffset));
+  if (ledgerPage > 1) receiptMoreParams.set("ledgerPage", String(ledgerPage));
+  if (ledgerType) receiptMoreParams.set("ledgerType", ledgerType);
+
+  function ledgerHref(nextPage: number, nextType: CreditEntryType | undefined) {
+    const query = new URLSearchParams();
+    if (nextPage > 1) query.set("ledgerPage", String(nextPage));
+    if (nextType) query.set("ledgerType", nextType);
+    const qs = query.toString();
+    return qs ? `/admin/stores/${id}?${qs}` : `/admin/stores/${id}`;
+  }
 
   return (
     <div className="space-y-8">
@@ -133,7 +157,25 @@ export default async function AdminStoreDetailPage({
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-ink">Ledger history</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-ink">
+            Ledger history <span className="font-normal text-muted">({detail.ledgerTotal})</span>
+          </h2>
+          <div className="flex flex-wrap gap-1 rounded-pill border border-hairline p-1">
+            {ENTRY_TYPE_FILTERS.map((filter) => (
+              <Link
+                key={filter.label}
+                href={ledgerHref(1, filter.value)}
+                className={cn(
+                  "rounded-pill px-3 py-1.5 text-sm font-medium transition-colors",
+                  ledgerType === filter.value ? "bg-surface-strong text-primary" : "text-body hover:text-ink"
+                )}
+              >
+                {filter.label}
+              </Link>
+            ))}
+          </div>
+        </div>
 
         {/* Desktop: table */}
         <div className="hidden overflow-hidden rounded-2xl border border-hairline md:block">
@@ -183,7 +225,7 @@ export default async function AdminStoreDetailPage({
               {detail.ledger.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="py-10 text-center text-muted">
-                    No credit activity yet.
+                    {ledgerType ? `No ${ENTRY_TYPE_LABEL[ledgerType].toLowerCase()} entries.` : "No credit activity yet."}
                   </TableCell>
                 </TableRow>
               )}
@@ -226,21 +268,18 @@ export default async function AdminStoreDetailPage({
           ))}
           {detail.ledger.length === 0 && (
             <div className="rounded-2xl border border-hairline py-10 text-center text-muted">
-              No credit activity yet.
+              {ledgerType ? `No ${ENTRY_TYPE_LABEL[ledgerType].toLowerCase()} entries.` : "No credit activity yet."}
             </div>
           )}
         </div>
 
-        {detail.ledgerHasMore && (
-          <div className="mt-4 flex justify-center">
-            <Link
-              href={`/admin/stores/${detail.storeId}?ledgerOffset=${ledgerOffset + LEDGER_PAGE_SIZE}`}
-              className="rounded-pill border border-hairline px-4 py-2 text-sm font-medium text-body hover:bg-surface-strong hover:text-ink"
-            >
-              Load more
-            </Link>
-          </div>
-        )}
+        <div className="mt-4">
+          <Pagination
+            currentPage={ledgerPage}
+            totalPages={ledgerTotalPages}
+            makeHref={(page) => ledgerHref(page, ledgerType)}
+          />
+        </div>
       </div>
 
       <StoreDangerZoneCard storeId={detail.storeId} storeName={detail.storeName} />
