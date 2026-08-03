@@ -58,3 +58,40 @@ export function formatDayKeyShort(dayKey: string): string {
     new Date(y, m - 1, d)
   );
 }
+
+/**
+ * The Monday (Manila calendar) that starts the week an instant falls in, as
+ * a YYYY-MM-DD key. Built from the already-Manila-resolved day key and then
+ * walked backward as pure calendar math (like previousDayKey) — never
+ * re-interpreted as an instant, so it can't drift across a host timezone.
+ */
+export function storeWeekKey(iso: string | Date): string {
+  const [y, m, d] = storeDayKey(iso).split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const day = date.getUTCDay();
+  const diff = date.getUTCDate() - day + (day === 0 ? -6 : 1);
+  date.setUTCDate(diff);
+  return date.toISOString().slice(0, 10);
+}
+
+/** The Manila calendar month (YYYY-MM) an instant falls in. */
+export function storeMonthKey(iso: string | Date): string {
+  return storeDayKey(iso).slice(0, 7);
+}
+
+/** Formats a week-start key as e.g. "Jul 21 – Jul 27". */
+export function formatWeekKeyShort(weekKey: string): string {
+  const [y, m, d] = weekKey.split("-").map(Number);
+  const start = new Date(y, m - 1, d);
+  const end = new Date(y, m - 1, d + 6);
+  const fmt = new Intl.DateTimeFormat("en-PH", { month: "short", day: "numeric" });
+  return `${fmt.format(start)} – ${fmt.format(end)}`;
+}
+
+/** Formats a YYYY-MM month key as e.g. "Jul 2026". */
+export function formatMonthKeyShort(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-PH", { month: "short", year: "numeric" }).format(
+    new Date(y, m - 1, 1)
+  );
+}
