@@ -2,7 +2,6 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, CreditEntryType, TransactionSource, AdminActionType, Json } from "@/lib/database.types";
 import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
-import type { RequestVolumePoint } from "@/components/charts/request-volume-chart";
 import { formatDate } from "@/lib/format";
 import { summarizeFeeConfig, type FeeConfigSummary } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
@@ -18,8 +17,6 @@ const COST_REPORT_WINDOW_DAYS = 380;
 export type StoreAnalytics = {
   requestsToday: number;
   requestsThisWeek: number;
-  dailyRequestCounts: RequestVolumePoint[];
-  dailyCreditUsage: CreditUsagePoint[];
 };
 
 /**
@@ -27,6 +24,9 @@ export type StoreAnalytics = {
  * the ledger history table — a high-volume store's last 200 ledger rows
  * (of any entry type) can span far less than 30 days, which would silently
  * truncate "today"/"this week" counts if derived from that same query.
+ *
+ * Daily/weekly/monthly series live in getStoreCostReport now — this stays
+ * scoped to the two KPI-tile totals the store detail page still needs.
  */
 export async function getStoreAnalytics(
   supabase: SupabaseClient<Database>,
@@ -37,7 +37,7 @@ export async function getStoreAnalytics(
 
   const { data: entries, error } = await supabase
     .from("credit_ledger")
-    .select("credit_delta, created_at")
+    .select("created_at")
     .eq("store_id", storeId)
     .eq("entry_type", "consumption")
     .gte("created_at", since);
@@ -45,11 +45,9 @@ export async function getStoreAnalytics(
   if (error) throw error;
 
   const countByDay = new Map<string, number>();
-  const creditsByDay = new Map<string, number>();
   for (const entry of entries ?? []) {
     const key = storeDayKey(entry.created_at);
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
-    creditsByDay.set(key, (creditsByDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
   }
 
   const todayKey = storeToday();
@@ -60,15 +58,7 @@ export async function getStoreAnalytics(
     .filter(([day]) => day >= weekAgoKey)
     .reduce((sum, [, count]) => sum + count, 0);
 
-  const dailyRequestCounts: RequestVolumePoint[] = [...countByDay.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, count]) => ({ label: formatDate(day), count }));
-
-  const dailyCreditUsage: CreditUsagePoint[] = [...creditsByDay.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, credits]) => ({ label: formatDate(day), credits }));
-
-  return { requestsToday, requestsThisWeek, dailyRequestCounts, dailyCreditUsage };
+  return { requestsToday, requestsThisWeek };
 }
 
 export type CreditLedgerEntry = {
@@ -91,8 +81,6 @@ export type AdminStoreDetail = {
   ledgerTotal: number;
   requestsToday: number;
   requestsThisWeek: number;
-  dailyRequestCounts: RequestVolumePoint[];
-  dailyUsage: CreditUsagePoint[];
 };
 
 export async function getStoreCreditDetail(
@@ -144,8 +132,6 @@ export async function getStoreCreditDetail(
     ledgerTotal: ledgerCount ?? 0,
     requestsToday: analytics.requestsToday,
     requestsThisWeek: analytics.requestsThisWeek,
-    dailyRequestCounts: analytics.dailyRequestCounts,
-    dailyUsage: analytics.dailyCreditUsage,
   };
 }
 
