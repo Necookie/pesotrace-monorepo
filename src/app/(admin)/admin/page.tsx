@@ -4,9 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   listStoresWithCredits,
   listPendingCreditRequests,
-  getPlatformUsageTrend,
+  getPlatformCostReport,
   type AdminStoreRow,
 } from "@/lib/queries/admin";
+import { CostReportPanel } from "@/components/admin/cost-report-panel";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
@@ -51,10 +52,10 @@ export default async function AdminOverviewPage({
 }) {
   const params = await searchParams;
   const supabase = createAdminClient();
-  const [allStores, pendingRequests, platformUsageTrend] = await Promise.all([
+  const [allStores, pendingRequests, platformCostReport] = await Promise.all([
     listStoresWithCredits(supabase),
     listPendingCreditRequests(supabase),
-    getPlatformUsageTrend(supabase),
+    getPlatformCostReport(supabase),
   ]);
 
   const query = (params.q ?? "").trim().toLowerCase();
@@ -105,8 +106,7 @@ export default async function AdminOverviewPage({
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Platform usage trend (30d)</h2>
-        <CreditUsageChart data={platformUsageTrend} />
+        <CostReportPanel report={platformCostReport} title="Platform cost & usage" />
       </div>
 
       <div className="mt-6">

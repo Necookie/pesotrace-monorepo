@@ -256,31 +256,6 @@ export async function listStoresWithCredits(
  * growing, flat, or dropping, without adding up 30 per-store sparklines
  * themselves.
  */
-export async function getPlatformUsageTrend(
-  supabase: SupabaseClient<Database>,
-  days = ANALYTICS_WINDOW_DAYS
-): Promise<CreditUsagePoint[]> {
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data, error } = await supabase
-    .from("credit_ledger")
-    .select("credit_delta, created_at")
-    .eq("entry_type", "consumption")
-    .gte("created_at", since);
-
-  if (error) throw error;
-
-  const byDay = new Map<string, number>();
-  for (const entry of data ?? []) {
-    const key = storeDayKey(entry.created_at);
-    byDay.set(key, (byDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
-  }
-
-  return [...byDay.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, credits]) => ({ label: formatDate(day), credits }));
-}
-
 /**
  * Daily/weekly/monthly cost report for one store — the per-store analytics
  * ask (usage stats, daily/weekly/monthly cost). Fetches a wide-enough window
