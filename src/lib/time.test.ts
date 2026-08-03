@@ -7,6 +7,10 @@ import {
   formatDayKeyShort,
   storeWeekKey,
   storeMonthKey,
+  previousWeekKey,
+  recentWeekKeys,
+  previousMonthKey,
+  recentMonthKeys,
   formatWeekKeyShort,
   formatMonthKeyShort,
 } from "./time";
@@ -109,6 +113,40 @@ describe("storeMonthKey", () => {
   it("rolls to the next Manila month across the UTC->Manila day boundary", () => {
     // 16:00 UTC on Jul 31 is already Aug 1 00:00 in Manila.
     expect(storeMonthKey("2026-07-31T16:00:00Z")).toBe("2026-08");
+  });
+});
+
+describe("previousWeekKey", () => {
+  it("steps back exactly one week", () => {
+    expect(previousWeekKey("2026-07-27")).toBe("2026-07-20");
+  });
+
+  it("crosses a year boundary", () => {
+    expect(previousWeekKey("2026-01-05")).toBe("2025-12-29");
+  });
+});
+
+describe("recentWeekKeys", () => {
+  it("returns N week-start keys ending with the current week, oldest first", () => {
+    const keys = recentWeekKeys(3, new Date("2026-07-27T03:00:00Z"));
+    expect(keys).toEqual(["2026-07-13", "2026-07-20", "2026-07-27"]);
+  });
+});
+
+describe("previousMonthKey", () => {
+  it("steps back one calendar month", () => {
+    expect(previousMonthKey("2026-07")).toBe("2026-06");
+  });
+
+  it("crosses a year boundary", () => {
+    expect(previousMonthKey("2026-01")).toBe("2025-12");
+  });
+});
+
+describe("recentMonthKeys", () => {
+  it("returns N month keys ending with the current month, oldest first", () => {
+    const keys = recentMonthKeys(3, new Date("2026-07-27T03:00:00Z"));
+    expect(keys).toEqual(["2026-05", "2026-06", "2026-07"]);
   });
 });
 

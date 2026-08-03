@@ -79,6 +79,44 @@ export function storeMonthKey(iso: string | Date): string {
   return storeDayKey(iso).slice(0, 7);
 }
 
+/** The Monday-key one week before a given week-start key, via pure calendar math. */
+export function previousWeekKey(weekKey: string): string {
+  const [y, m, d] = weekKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() - 7);
+  return date.toISOString().slice(0, 10);
+}
+
+/** The last `count` Manila week-start keys ending with the current week, oldest first. */
+export function recentWeekKeys(count: number, now: Date = new Date()): string[] {
+  const keys: string[] = [];
+  let key = storeWeekKey(now);
+  for (let i = 0; i < count; i++) {
+    keys.push(key);
+    key = previousWeekKey(key);
+  }
+  return keys.reverse();
+}
+
+/** The YYYY-MM key one calendar month before a given month key. */
+export function previousMonthKey(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, 1));
+  date.setUTCMonth(date.getUTCMonth() - 1);
+  return date.toISOString().slice(0, 7);
+}
+
+/** The last `count` Manila month keys ending with the current month, oldest first. */
+export function recentMonthKeys(count: number, now: Date = new Date()): string[] {
+  const keys: string[] = [];
+  let key = storeMonthKey(now);
+  for (let i = 0; i < count; i++) {
+    keys.push(key);
+    key = previousMonthKey(key);
+  }
+  return keys.reverse();
+}
+
 /** Formats a week-start key as e.g. "Jul 21 – Jul 27". */
 export function formatWeekKeyShort(weekKey: string): string {
   const [y, m, d] = weekKey.split("-").map(Number);
