@@ -7,9 +7,13 @@ import { formatDate } from "@/lib/format";
 import { summarizeFeeConfig, type FeeConfigSummary } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { storeDayKey, storeToday } from "@/lib/time";
+import { buildCostReport, type CostReport } from "@/lib/cost-report";
 
 const LEDGER_HISTORY_LIMIT = 25;
 const ANALYTICS_WINDOW_DAYS = 30;
+// Covers the 12-month trailing window buildCostReport generates, plus slack
+// for the current partial month.
+const COST_REPORT_WINDOW_DAYS = 380;
 
 export type StoreAnalytics = {
   requestsToday: number;
@@ -275,6 +279,42 @@ export async function getPlatformUsageTrend(
   return [...byDay.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, credits]) => ({ label: formatDate(day), credits }));
+}
+
+/**
+ * Daily/weekly/monthly cost report for one store — the per-store analytics
+ * ask (usage stats, daily/weekly/monthly cost). Fetches a wide-enough window
+ * in one query and lets buildCostReport do all the bucketing.
+ */
+export async function getStoreCostReport(
+  supabase: SupabaseClient<Database>,
+  storeId: string
+): Promise<CostReport> {
+  const since = new Date(Date.now() - COST_REPORT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from("credit_ledger")
+    .select("created_at, cost_usd, credit_delta")
+    .eq("store_id", storeId)
+    .eq("entry_type", "consumption")
+    .gte("created_at", since);
+
+  if (error) throw error;
+  return buildCostReport(data ?? []);
+}
+
+/** Same report, aggregated across every store — the platform-wide view on the overview page. */
+export async function getPlatformCostReport(supabase: SupabaseClient<Database>): Promise<CostReport> {
+  const since = new Date(Date.now() - COST_REPORT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from("credit_ledger")
+    .select("created_at, cost_usd, credit_delta")
+    .eq("entry_type", "consumption")
+    .gte("created_at", since);
+
+  if (error) throw error;
+  return buildCostReport(data ?? []);
 }
 
 export type PendingCreditRequest = {
