@@ -51,3 +51,8 @@ export const RequestVolumeChart = dynamic(
   () => import("./request-volume-chart").then((m) => m.RequestVolumeChart),
   { ssr: false, loading: () => <ChartFallback height={220} /> }
 );
+
+export const CostTrendChart = dynamic(
+  () => import("./cost-trend-chart").then((m) => m.CostTrendChart),
+  { ssr: false, loading: () => <ChartFallback height={220} /> }
+);
