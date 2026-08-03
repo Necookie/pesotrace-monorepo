@@ -6,11 +6,11 @@ import {
   getStoreCreditDetail,
   listStoreFeeChanges,
   getStoreTransactionsWithReceipts,
+  getStoreCostReport,
 } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { CreditUsageChart, RequestVolumeChart } from "@/components/charts/lazy";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
@@ -18,6 +18,7 @@ import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
 import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
 import { StoreReceiptVerification } from "@/components/admin/store-receipt-verification";
+import { CostReportPanel } from "@/components/admin/cost-report-panel";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { Pagination } from "@/components/ui/pagination";
@@ -69,10 +70,11 @@ export default async function AdminStoreDetailPage({
 
   if (!detail) notFound();
 
-  const [{ data: store }, feeChanges, receipts] = await Promise.all([
+  const [{ data: store }, feeChanges, receipts, costReport] = await Promise.all([
     supabase.from("stores").select("fee_tier_config, fee_formula").eq("id", id).maybeSingle(),
     listStoreFeeChanges(supabase, id),
     getStoreTransactionsWithReceipts(supabase, id, RECEIPT_PAGE_SIZE, receiptOffset),
+    getStoreCostReport(supabase, id),
   ]);
 
   const ledgerTotalPages = Math.max(1, Math.ceil(detail.ledgerTotal / LEDGER_PAGE_SIZE));
@@ -145,16 +147,7 @@ export default async function AdminStoreDetailPage({
 
       <StoreFeeHistory changes={feeChanges} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-3 text-sm font-semibold text-ink">Requests per day (30d)</h2>
-          <RequestVolumeChart data={detail.dailyRequestCounts} />
-        </div>
-        <div>
-          <h2 className="mb-3 text-sm font-semibold text-ink">Credit usage (30d)</h2>
-          <CreditUsageChart data={detail.dailyUsage} />
-        </div>
-      </div>
+      <CostReportPanel report={costReport} title="Cost & usage" />
 
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
