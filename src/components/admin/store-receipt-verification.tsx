@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Amount } from "@/components/shared/amount";
 import { StatusBadge } from "@/components/ledger/status-badge";
 import { CategoryBadge } from "@/components/ledger/category-badge";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { formatDateTime } from "@/lib/format";
 import type { StoreReceiptRow } from "@/lib/queries/admin";
 
@@ -35,18 +36,14 @@ export function StoreReceiptVerification({
   moreHref: string;
 }) {
   return (
-    <div className="rounded-2xl border border-hairline p-4 sm:p-6">
-      <h2 className="text-sm font-semibold text-ink">Transaction verification</h2>
-      <p className="mt-1 text-xs text-muted">
-        Each transaction beside the receipt it was extracted from. Click a receipt to open it
-        full-size. Times shown are the store&apos;s local (Philippine) time.
-      </p>
+    <CollapsibleSection
+      title="Transaction verification"
+      description="Each transaction beside the receipt it was extracted from. Click a receipt to open it full-size. Times shown are the store's local (Philippine) time."
+      badge={rows.length > 0 ? `${rows.length} shown` : undefined}
+    >
+      {rows.length === 0 && <p className="text-sm text-muted">This store has no transactions yet.</p>}
 
-      {rows.length === 0 && (
-        <p className="mt-4 text-sm text-muted">This store has no transactions yet.</p>
-      )}
-
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4">
         {rows.map(({ transaction, receiptUrl }) => (
           <div
             key={transaction.id}
@@ -114,6 +111,6 @@ export function StoreReceiptVerification({
           </Link>
         </div>
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
