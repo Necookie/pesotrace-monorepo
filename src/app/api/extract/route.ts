@@ -48,11 +48,17 @@ async function handlePost(request: Request) {
     );
   }
 
-  const { data: credits } = await supabase
-    .from("store_credits")
-    .select("balance")
-    .eq("store_id", storeId)
-    .maybeSingle();
+  const [{ data: credits }, { data: store }] = await Promise.all([
+    supabase.from("store_credits").select("balance").eq("store_id", storeId).maybeSingle(),
+    supabase.from("stores").select("phone_numbers, suspended").eq("id", storeId).single(),
+  ]);
+
+  if (store?.suspended) {
+    return NextResponse.json(
+      { error: "This store's access is currently suspended. Contact support for help." },
+      { status: 403 }
+    );
+  }
   if ((credits?.balance ?? 0) <= 0) {
     return NextResponse.json(
       { error: "Out of AI credits — request more from your store settings." },
@@ -60,11 +66,6 @@ async function handlePost(request: Request) {
     );
   }
 
-  const { data: store } = await supabase
-    .from("stores")
-    .select("phone_numbers")
-    .eq("id", storeId)
-    .single();
   const storePhoneNumbers = store?.phone_numbers ?? [];
 
   const formData = await request.formData();
