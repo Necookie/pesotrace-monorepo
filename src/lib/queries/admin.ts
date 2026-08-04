@@ -523,3 +523,59 @@ export async function searchTransactionsAcrossStores(
     storeName: nameByStoreId.get(transaction.store_id) ?? "Deleted store",
   }));
 }
+
+const FAILURE_WINDOW_DAYS = 7;
+
+export type StoreExtractionFailures = {
+  storeId: string;
+  storeName: string;
+  failureCount: number;
+  wastedCostUsd: number;
+};
+
+/**
+ * Stores with failed extractions in the last 7 days, worst first. A failed
+ * extraction still bills Gemini but charges the store 0 credits (see
+ * consume_credit's p_credits: 0 path in extract/route.ts) — that's the only
+ * signal a failure leaves in the ledger, since the actual error text isn't
+ * persisted anywhere. Surfacing the pattern (not the message) still catches
+ * a bad prompt or a systemic API issue before it becomes a pile of tickets.
+ */
+export async function listRecentExtractionFailures(
+  supabase: SupabaseClient<Database>,
+  days = FAILURE_WINDOW_DAYS
+): Promise<StoreExtractionFailures[]> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: entries, error } = await supabase
+    .from("credit_ledger")
+    .select("store_id, cost_usd")
+    .eq("entry_type", "consumption")
+    .eq("credit_delta", 0)
+    .gt("cost_usd", 0)
+    .gte("created_at", since);
+
+  if (error) throw error;
+  if (!entries || entries.length === 0) return [];
+
+  const byStore = new Map<string, { failureCount: number; wastedCostUsd: number }>();
+  for (const entry of entries) {
+    const existing = byStore.get(entry.store_id) ?? { failureCount: 0, wastedCostUsd: 0 };
+    existing.failureCount += 1;
+    existing.wastedCostUsd += entry.cost_usd;
+    byStore.set(entry.store_id, existing);
+  }
+
+  const storeIds = [...byStore.keys()];
+  const { data: stores, error: storesError } = await supabase.from("stores").select("id, name").in("id", storeIds);
+  if (storesError) throw storesError;
+  const nameByStoreId = new Map((stores ?? []).map((s) => [s.id, s.name]));
+
+  return [...byStore.entries()]
+    .map(([storeId, stats]) => ({
+      storeId,
+      storeName: nameByStoreId.get(storeId) ?? "Deleted store",
+      ...stats,
+    }))
+    .sort((a, b) => b.failureCount - a.failureCount);
+}

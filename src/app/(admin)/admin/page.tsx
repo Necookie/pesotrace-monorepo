@@ -5,9 +5,11 @@ import {
   listStoresWithCredits,
   listPendingCreditRequests,
   getPlatformCostReport,
+  listRecentExtractionFailures,
   type AdminStoreRow,
 } from "@/lib/queries/admin";
 import { CostReportPanel } from "@/components/admin/cost-report-panel";
+import { ExtractionFailuresPanel } from "@/components/admin/extraction-failures-panel";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
@@ -52,10 +54,11 @@ export default async function AdminOverviewPage({
 }) {
   const params = await searchParams;
   const supabase = createAdminClient();
-  const [allStores, pendingRequests, platformCostReport] = await Promise.all([
+  const [allStores, pendingRequests, platformCostReport, extractionFailures] = await Promise.all([
     listStoresWithCredits(supabase),
     listPendingCreditRequests(supabase),
     getPlatformCostReport(supabase),
+    listRecentExtractionFailures(supabase),
   ]);
 
   const query = (params.q ?? "").trim().toLowerCase();
@@ -103,6 +106,10 @@ export default async function AdminOverviewPage({
           icon={AlertTriangle}
           accent={storesOutOfCredits > 0 ? "down" : "muted"}
         />
+      </div>
+
+      <div className="mt-6">
+        <ExtractionFailuresPanel failures={extractionFailures} />
       </div>
 
       <div className="mt-6">
