@@ -106,6 +106,60 @@ export async function updateStoreName(input: { storeId: string; name: string }) 
   return { ok: true as const };
 }
 
+const suspendStoreSchema = z.object({
+  storeId: z.string().uuid(),
+  reason: z.string().trim().min(1, "A reason is required").max(500, "Reason is too long"),
+});
+
+/**
+ * Blocks a store's extraction access without the irreversible full delete —
+ * for abuse, non-payment, or an investigation, where the store's data and
+ * history need to stay intact.
+ */
+export async function suspendStore(input: { storeId: string; reason: string }) {
+  const parsed = suspendStoreSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const adminUserId = await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("stores")
+    .update({ suspended: true, suspended_at: new Date().toISOString(), suspended_reason: parsed.data.reason })
+    .eq("id", parsed.data.storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(supabase, adminUserId, "suspend_store", parsed.data.storeId, parsed.data.reason);
+
+  revalidatePath(`/admin/stores/${parsed.data.storeId}`);
+  revalidatePath("/admin");
+  return { ok: true as const };
+}
+
+export async function unsuspendStore(storeId: string) {
+  const parsed = z.string().uuid().safeParse(storeId);
+  if (!parsed.success) return { ok: false as const, error: "Invalid store" };
+
+  const adminUserId = await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("stores")
+    .update({ suspended: false, suspended_at: null, suspended_reason: null })
+    .eq("id", parsed.data);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(supabase, adminUserId, "unsuspend_store", parsed.data, null);
+
+  revalidatePath(`/admin/stores/${parsed.data}`);
+  revalidatePath("/admin");
+  return { ok: true as const };
+}
+
 const updateStoreFeeConfigSchema = z.object({
   storeId: z.string().uuid(),
   tiers: feeTierConfigSchema,
