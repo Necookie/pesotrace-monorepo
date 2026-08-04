@@ -431,3 +431,54 @@ export async function deleteStore(input: { storeId: string; confirmName: string 
   revalidatePath("/admin");
   return { ok: true as const };
 }
+
+const updatePlatformSettingsSchema = z.object({
+  lowBalanceThreshold: z.number().min(0, "Threshold can't be negative").max(100000, "That's not a realistic threshold"),
+});
+
+/**
+ * The low-balance cron reads this on every run — moving it here instead of
+ * a hardcoded constant means bumping the threshold no longer needs a code
+ * change and a deploy.
+ */
+export async function updatePlatformSettings(input: { lowBalanceThreshold: number }) {
+  const parsed = updatePlatformSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const adminUserId = await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const { data: previous } = await supabase
+    .from("platform_settings")
+    .select("low_balance_threshold")
+    .eq("id", true)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("platform_settings")
+    .update({
+      low_balance_threshold: parsed.data.lowBalanceThreshold,
+      updated_at: new Date().toISOString(),
+      updated_by: adminUserId,
+    })
+    .eq("id", true);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(
+    supabase,
+    adminUserId,
+    "update_platform_settings",
+    null,
+    `Low-balance threshold ${parsed.data.lowBalanceThreshold}`,
+    {
+      previousLowBalanceThreshold: previous?.low_balance_threshold ?? null,
+      newLowBalanceThreshold: parsed.data.lowBalanceThreshold,
+    }
+  );
+
+  revalidatePath("/admin/settings");
+  return { ok: true as const };
+}

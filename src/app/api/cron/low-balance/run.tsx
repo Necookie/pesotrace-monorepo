@@ -2,11 +2,11 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getStoreOwnerEmail } from "@/lib/email/recipients";
+import { getPlatformSettings } from "@/lib/queries/admin";
 import { captureException } from "@/lib/monitoring-server";
 import { LowBalanceOwnerEmail } from "@/components/email/templates/low-balance-owner";
 import { LowBalanceDigestEmail } from "@/components/email/templates/low-balance-digest";
 
-const LOW_BALANCE_THRESHOLD = 10;
 const RENOTIFY_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -18,10 +18,14 @@ export type LowBalanceSweepResult = {
 export async function runLowBalanceSweep(): Promise<LowBalanceSweepResult> {
   const supabase = createAdminClient();
 
+  // Configurable from /admin/settings instead of a hardcoded constant — see
+  // getPlatformSettings for the fallback if the settings row is ever missing.
+  const { lowBalanceThreshold } = await getPlatformSettings(supabase);
+
   const { data: lowStores, error } = await supabase
     .from("store_credits")
     .select("store_id, balance, low_balance_notified_at")
-    .lte("balance", LOW_BALANCE_THRESHOLD);
+    .lte("balance", lowBalanceThreshold);
 
   if (error) {
     await captureException(error, "server", { context: "runLowBalanceSweep" });

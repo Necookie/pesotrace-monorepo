@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Store, Search, ScrollText, ShieldCheck } from "lucide-react";
+import { Store, Search, ScrollText, ShieldCheck, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/admin/search", label: "Search", icon: Search },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   { href: "/admin/admins", label: "Admins", icon: ShieldCheck },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminNav() {

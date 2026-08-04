@@ -579,3 +579,34 @@ export async function listRecentExtractionFailures(
     }))
     .sort((a, b) => b.failureCount - a.failureCount);
 }
+
+const DEFAULT_LOW_BALANCE_THRESHOLD = 10;
+
+export type PlatformSettings = {
+  lowBalanceThreshold: number;
+  updatedAt: string;
+  updatedBy: string | null;
+};
+
+/**
+ * The one operational setting today: the credit balance at or below which
+ * the low-balance cron sweep notifies a store. Falls back to the historical
+ * hardcoded value if the singleton row is ever missing (it's seeded by
+ * migration 0018 and never deleted, but the fallback keeps the cron from
+ * hard-failing on a schema hiccup rather than just skipping a threshold).
+ */
+export async function getPlatformSettings(supabase: SupabaseClient<Database>): Promise<PlatformSettings> {
+  const { data, error } = await supabase
+    .from("platform_settings")
+    .select("low_balance_threshold, updated_at, updated_by")
+    .eq("id", true)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return {
+    lowBalanceThreshold: data?.low_balance_threshold ?? DEFAULT_LOW_BALANCE_THRESHOLD,
+    updatedAt: data?.updated_at ?? new Date(0).toISOString(),
+    updatedBy: data?.updated_by ?? null,
+  };
+}
