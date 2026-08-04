@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Wallet, Zap, CalendarDays } from "lucide-react";
+import { ArrowLeft, Eye, Wallet, Zap, CalendarDays } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getStoreCreditDetail,
@@ -101,13 +101,22 @@ export default async function AdminStoreDetailPage({
   return (
     <div className="space-y-8">
       <div>
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink"
-        >
-          <ArrowLeft className="size-3.5" />
-          All stores
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-ink"
+          >
+            <ArrowLeft className="size-3.5" />
+            All stores
+          </Link>
+          <Link
+            href={`/admin/stores/${detail.storeId}/preview`}
+            className="inline-flex items-center gap-1.5 rounded-pill border border-hairline px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-strong hover:text-ink"
+          >
+            <Eye className="size-3.5" />
+            View as store
+          </Link>
+        </div>
         <h1 className="mt-2 text-2xl font-medium text-ink">{detail.storeName}</h1>
       </div>
 
