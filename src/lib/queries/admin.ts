@@ -472,3 +472,54 @@ export async function getStoreTransactionsWithReceipts(
     hasMore,
   };
 }
+
+const CROSS_STORE_SEARCH_LIMIT = 50;
+
+export type CrossStoreSearchResult = {
+  transaction: Database["public"]["Tables"]["transactions"]["Row"];
+  storeId: string;
+  storeName: string;
+};
+
+/**
+ * Finds a transaction across every store by reference number or
+ * counterparty — the per-store search on the store detail page can't help
+ * when a customer dispute comes in without knowing which store it belongs
+ * to. Uses the admin (service-role) client, so it deliberately reads across
+ * tenants; callers must already be gated to platform operators.
+ */
+export async function searchTransactionsAcrossStores(
+  supabase: SupabaseClient<Database>,
+  query: string,
+  limit = CROSS_STORE_SEARCH_LIMIT
+): Promise<CrossStoreSearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  // Same PostgREST or() escaping as listTransactions' search filter.
+  const escaped = trimmed.replace(/[%,()]/g, (c) => `\\${c}`);
+
+  const { data: transactions, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .or(
+      `ref_number.ilike.%${escaped}%,counterparty_name.ilike.%${escaped}%,counterparty_number.ilike.%${escaped}%`
+    )
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  if (!transactions || transactions.length === 0) return [];
+
+  const storeIds = [...new Set(transactions.map((t) => t.store_id))];
+  const { data: stores, error: storesError } = await supabase.from("stores").select("id, name").in("id", storeIds);
+  if (storesError) throw storesError;
+
+  const nameByStoreId = new Map((stores ?? []).map((s) => [s.id, s.name]));
+
+  return transactions.map((transaction) => ({
+    transaction,
+    storeId: transaction.store_id,
+    storeName: nameByStoreId.get(transaction.store_id) ?? "Deleted store",
+  }));
+}
