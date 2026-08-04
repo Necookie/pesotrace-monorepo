@@ -482,3 +482,60 @@ export async function updatePlatformSettings(input: { lowBalanceThreshold: numbe
   revalidatePath("/admin/settings");
   return { ok: true as const };
 }
+
+const bulkAdjustCreditsSchema = z.object({
+  storeIds: z.array(z.string().uuid()).min(1, "Select at least one store"),
+  delta: z.number().refine((v) => v !== 0, "Amount can't be zero"),
+  note: z.string().trim().min(1, "A note is required"),
+});
+
+/**
+ * Grants (or deducts) the same amount across many stores at once — a promo
+ * to a batch of trial stores, say — instead of the same adjustment repeated
+ * one store at a time. Each store still gets its own credit_ledger row via
+ * adjust_credit; only the audit log entry is a single summary rather than
+ * one per store, since they're all one operator decision.
+ */
+export async function bulkAdjustCredits(input: { storeIds: string[]; delta: number; note: string }) {
+  const parsed = bulkAdjustCreditsSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const adminUserId = await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const results = await Promise.all(
+    parsed.data.storeIds.map(async (storeId) => {
+      const { error } = await supabase.rpc("adjust_credit", {
+        p_store_id: storeId,
+        p_delta: parsed.data.delta,
+        p_note: parsed.data.note,
+        p_created_by: adminUserId,
+      });
+      return { storeId, ok: !error };
+    })
+  );
+
+  const succeededIds = results.filter((r) => r.ok).map((r) => r.storeId);
+  const failedCount = results.length - succeededIds.length;
+
+  if (succeededIds.length > 0) {
+    await logAdminAction(supabase, adminUserId, "bulk_grant_credits", null, parsed.data.note, {
+      storeIds: succeededIds,
+      delta: parsed.data.delta,
+      succeededCount: succeededIds.length,
+      failedCount,
+    });
+  }
+
+  revalidatePath("/admin");
+
+  if (failedCount > 0) {
+    return {
+      ok: false as const,
+      error: `${succeededIds.length} of ${results.length} succeeded — ${failedCount} failed`,
+    };
+  }
+  return { ok: true as const, succeededCount: succeededIds.length };
+}
