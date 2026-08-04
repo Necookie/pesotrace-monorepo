@@ -17,6 +17,11 @@ const ACTION_LABEL: Record<AdminActionType, string> = {
   grant_admin: "Granted admin",
   revoke_admin: "Revoked admin",
   update_fee_tiers: "Updated fee setup",
+  suspend_store: "Suspended store",
+  unsuspend_store: "Unsuspended store",
+  update_admin_notes: "Updated admin notes",
+  bulk_grant_credits: "Bulk-granted credits",
+  update_platform_settings: "Updated platform settings",
 };
 
 const ACTION_TEXT_COLOR: Record<AdminActionType, string> = {
@@ -28,6 +33,11 @@ const ACTION_TEXT_COLOR: Record<AdminActionType, string> = {
   grant_admin: "text-up",
   revoke_admin: "text-down",
   update_fee_tiers: "text-ink",
+  suspend_store: "text-down",
+  unsuspend_store: "text-up",
+  update_admin_notes: "text-ink",
+  bulk_grant_credits: "text-up",
+  update_platform_settings: "text-ink",
 };
 
 export default async function AdminAuditLogPage() {

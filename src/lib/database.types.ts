@@ -13,7 +13,12 @@ export type AdminActionType =
   | "delete_store"
   | "grant_admin"
   | "revoke_admin"
-  | "update_fee_tiers";
+  | "update_fee_tiers"
+  | "suspend_store"
+  | "unsuspend_store"
+  | "update_admin_notes"
+  | "bulk_grant_credits"
+  | "update_platform_settings";
 export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
@@ -42,6 +47,12 @@ export type Database = {
           fee_formula: string | null;
           phone_numbers: string[];
           notification_prefs: NotificationPrefs;
+          /** Blocks extraction when true. Set by a platform admin, never by the store itself. */
+          suspended: boolean;
+          suspended_at: string | null;
+          suspended_reason: string | null;
+          /** Admin-only support notes — never surfaced to the store owner. */
+          admin_notes: string | null;
           created_at: string;
         };
         Insert: {
@@ -51,6 +62,10 @@ export type Database = {
           fee_formula?: string | null;
           phone_numbers?: string[];
           notification_prefs?: NotificationPrefs;
+          suspended?: boolean;
+          suspended_at?: string | null;
+          suspended_reason?: string | null;
+          admin_notes?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["stores"]["Insert"]>;
@@ -307,6 +322,22 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["platform_admins"]["Insert"]>;
+        Relationships: [];
+      };
+      platform_settings: {
+        Row: {
+          id: true;
+          low_balance_threshold: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: true;
+          low_balance_threshold?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_settings"]["Insert"]>;
         Relationships: [];
       };
     };
