@@ -15,6 +15,7 @@ import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
 import { StoreSuspendCard } from "@/components/admin/store-suspend-card";
+import { StoreAdminNotesCard } from "@/components/admin/store-admin-notes-card";
 import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
 import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
@@ -125,6 +126,8 @@ export default async function AdminStoreDetailPage({
           accent="primary"
         />
       </div>
+
+      <StoreAdminNotesCard storeId={detail.storeId} initialNotes={store?.admin_notes ?? null} />
 
       <StoreReceiptVerification
         rows={receipts.rows}

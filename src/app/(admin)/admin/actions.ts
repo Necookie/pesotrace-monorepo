@@ -160,6 +160,37 @@ export async function unsuspendStore(storeId: string) {
   return { ok: true as const };
 }
 
+const updateAdminNotesSchema = z.object({
+  storeId: z.string().uuid(),
+  notes: z.string().trim().max(5000, "Notes are too long"),
+});
+
+/**
+ * Admin-only support notes — never surfaced to the store owner. Purely for
+ * operator context, so a note is worth writing even when it's just clearing
+ * one out (empty string is a valid save, not an error).
+ */
+export async function updateAdminNotes(input: { storeId: string; notes: string }) {
+  const parsed = updateAdminNotesSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const adminUserId = await requirePlatformAdmin();
+  const supabase = createAdminClient();
+
+  const notes = parsed.data.notes.length > 0 ? parsed.data.notes : null;
+
+  const { error } = await supabase.from("stores").update({ admin_notes: notes }).eq("id", parsed.data.storeId);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  await logAdminAction(supabase, adminUserId, "update_admin_notes", parsed.data.storeId, null);
+
+  revalidatePath(`/admin/stores/${parsed.data.storeId}`);
+  return { ok: true as const };
+}
+
 const updateStoreFeeConfigSchema = z.object({
   storeId: z.string().uuid(),
   tiers: feeTierConfigSchema,
