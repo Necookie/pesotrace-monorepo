@@ -5,8 +5,9 @@ import type { CreditUsagePoint } from "@/components/charts/credit-usage-chart";
 import { formatDate } from "@/lib/format";
 import { summarizeFeeConfig, type FeeConfigSummary } from "@/lib/fees";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
-import { storeDayKey, storeToday } from "@/lib/time";
+import { storeDayKey, storeToday, recentDayKeys } from "@/lib/time";
 import { buildCostReport, type CostReport } from "@/lib/cost-report";
+import { isUsageAnomaly } from "@/lib/usage-anomaly";
 
 const LEDGER_HISTORY_LIMIT = 25;
 const ANALYTICS_WINDOW_DAYS = 30;
@@ -151,6 +152,13 @@ export type AdminStoreRow = {
    */
   feeConfig: FeeConfigSummary;
   suspended: boolean;
+  /**
+   * True when today's request count is a significant spike (>= 3x) over the
+   * store's trailing 7-day average — a shared/abused API key looks like
+   * this just as often as a great sales day does, so it's a "look at this"
+   * flag, not an accusation.
+   */
+  usageAnomaly: boolean;
 };
 
 
@@ -189,6 +197,7 @@ export async function listStoresWithCredits(
       requestsToday: number;
       lastActivityAt: string;
       byDay: Map<string, number>;
+      requestsByDay: Map<string, number>;
     }
   >();
   for (const entry of recentLedger ?? []) {
@@ -200,6 +209,7 @@ export async function listStoresWithCredits(
         requestsToday: 0,
         lastActivityAt: entry.created_at,
         byDay: new Map(),
+        requestsByDay: new Map(),
       };
       usageByStore.set(entry.store_id, existing);
     }
@@ -210,7 +220,11 @@ export async function listStoresWithCredits(
     const key = storeDayKey(entry.created_at);
     if (key === todayKey) existing.requestsToday += 1;
     existing.byDay.set(key, (existing.byDay.get(key) ?? 0) + Math.abs(entry.credit_delta));
+    existing.requestsByDay.set(key, (existing.requestsByDay.get(key) ?? 0) + 1);
   }
+
+  // The 7 days immediately before today, for isUsageAnomaly's trailing-average baseline.
+  const priorWeekKeys = recentDayKeys(8, new Date()).slice(0, 7);
 
   return (stores ?? []).map((store) => {
     const usage = usageByStore.get(store.id);
@@ -234,6 +248,12 @@ export async function listStoresWithCredits(
         formula: store.fee_formula,
       }),
       suspended: store.suspended,
+      usageAnomaly: usage
+        ? isUsageAnomaly(
+            usage.requestsToday,
+            priorWeekKeys.map((key) => usage.requestsByDay.get(key) ?? 0)
+          )
+        : false,
     };
   });
 }

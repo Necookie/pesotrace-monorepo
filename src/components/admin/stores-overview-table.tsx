@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Wallet } from "lucide-react";
+import { Wallet, TrendingUp } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -127,6 +127,15 @@ export function StoresOverviewTable({
                       Out of credits
                     </span>
                   )}
+                  {store.usageAnomaly && (
+                    <span
+                      title="Today's requests are a significant spike over this store's usual pace"
+                      className="ml-2 inline-flex items-center gap-0.5 rounded-pill bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                    >
+                      <TrendingUp className="size-3" />
+                      Spike
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="max-w-56 py-3">
                   <FeeConfigBadge summary={store.feeConfig} />
@@ -207,6 +216,12 @@ export function StoresOverviewTable({
                   {store.balance <= 0 && (
                     <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
                       Out of credits
+                    </span>
+                  )}
+                  {store.usageAnomaly && (
+                    <span className="ml-2 inline-flex items-center gap-0.5 rounded-pill bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      <TrendingUp className="size-3" />
+                      Spike
                     </span>
                   )}
                 </div>
