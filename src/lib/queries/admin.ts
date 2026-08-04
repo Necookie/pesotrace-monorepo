@@ -150,6 +150,7 @@ export type AdminStoreRow = {
    * the list, instead of opening each store to find out.
    */
   feeConfig: FeeConfigSummary;
+  suspended: boolean;
 };
 
 
@@ -163,7 +164,7 @@ export async function listStoresWithCredits(
     { data: credits, error: creditsError },
     { data: recentLedger, error: ledgerError },
   ] = await Promise.all([
-    supabase.from("stores").select("id, name, fee_tier_config, fee_formula").order("name"),
+    supabase.from("stores").select("id, name, fee_tier_config, fee_formula, suspended").order("name"),
     supabase.from("store_credits").select("store_id, balance"),
     supabase
       .from("credit_ledger")
@@ -232,6 +233,7 @@ export async function listStoresWithCredits(
         tiers: store.fee_tier_config ?? DEFAULT_FEE_TIER_CONFIG,
         formula: store.fee_formula,
       }),
+      suspended: store.suspended,
     };
   });
 }

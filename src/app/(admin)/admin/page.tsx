@@ -152,12 +152,17 @@ export default async function AdminOverviewPage({
             {stores.map((store) => (
               <TableRow
                 key={store.storeId}
-                className={cn(store.balance <= 0 && "border-l-2 border-l-down bg-down/5")}
+                className={cn((store.balance <= 0 || store.suspended) && "border-l-2 border-l-down bg-down/5")}
               >
                 <TableCell className="py-3 pl-4">
                   <Link href={`/admin/stores/${store.storeId}`} className="font-medium text-ink hover:text-primary">
                     {store.storeName}
                   </Link>
+                  {store.suspended && (
+                    <span className="ml-2 inline-block rounded-pill bg-down/10 px-2 py-0.5 text-[11px] font-medium text-down">
+                      Suspended
+                    </span>
+                  )}
                   {store.balance <= 0 && (
                     <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
                       Out of credits
@@ -216,7 +221,7 @@ export default async function AdminOverviewPage({
             key={store.storeId}
             className={cn(
               "rounded-2xl border border-hairline p-4",
-              store.balance <= 0 && "border-l-2 border-l-down bg-down/5"
+              (store.balance <= 0 || store.suspended) && "border-l-2 border-l-down bg-down/5"
             )}
           >
             <div className="flex items-start justify-between gap-2">
@@ -227,6 +232,11 @@ export default async function AdminOverviewPage({
                 >
                   {store.storeName}
                 </Link>
+                {store.suspended && (
+                  <span className="ml-2 inline-block rounded-pill bg-down/10 px-2 py-0.5 text-[11px] font-medium text-down">
+                    Suspended
+                  </span>
+                )}
                 {store.balance <= 0 && (
                   <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
                     Out of credits

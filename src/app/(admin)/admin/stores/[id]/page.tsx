@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { AdjustCreditsForm } from "@/components/admin/adjust-credits-form";
 import { RenameStoreForm } from "@/components/admin/rename-store-form";
 import { StoreDangerZoneCard } from "@/components/admin/store-danger-zone-card";
+import { StoreSuspendCard } from "@/components/admin/store-suspend-card";
 import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
 import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
@@ -71,7 +72,11 @@ export default async function AdminStoreDetailPage({
   if (!detail) notFound();
 
   const [{ data: store }, feeChanges, receipts, costReport] = await Promise.all([
-    supabase.from("stores").select("fee_tier_config, fee_formula").eq("id", id).maybeSingle(),
+    supabase
+      .from("stores")
+      .select("fee_tier_config, fee_formula, suspended, suspended_at, suspended_reason, admin_notes")
+      .eq("id", id)
+      .maybeSingle(),
     listStoreFeeChanges(supabase, id),
     getStoreTransactionsWithReceipts(supabase, id, RECEIPT_PAGE_SIZE, receiptOffset),
     getStoreCostReport(supabase, id),
@@ -274,6 +279,14 @@ export default async function AdminStoreDetailPage({
           />
         </div>
       </div>
+
+      <StoreSuspendCard
+        storeId={detail.storeId}
+        storeName={detail.storeName}
+        suspended={store?.suspended ?? false}
+        suspendedAt={store?.suspended_at ?? null}
+        suspendedReason={store?.suspended_reason ?? null}
+      />
 
       <StoreDangerZoneCard storeId={detail.storeId} storeName={detail.storeName} />
     </div>
