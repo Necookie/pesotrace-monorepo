@@ -110,32 +110,39 @@ export function CostReportPanel({ report, title = "Cost & usage" }: { report: Co
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-hairline">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="py-3 pl-4">{period === "daily" ? "Day" : period === "weekly" ? "Week" : "Month"}</TableHead>
-              <TableHead className="py-3 text-right">Requests</TableHead>
-              <TableHead className="py-3 text-right">Credits</TableHead>
-              <TableHead className="py-3 pr-4 text-right">Cost</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {[...series].reverse().map((stat) => (
-              <TableRow key={stat.key}>
-                <TableCell className="py-2.5 pl-4 text-sm text-ink">{stat.label}</TableCell>
-                <TableCell className="py-2.5 text-right font-mono text-sm text-body">
-                  {stat.requests.toLocaleString()}
-                </TableCell>
-                <TableCell className="py-2.5 text-right font-mono text-sm text-body">
-                  {stat.credits.toLocaleString()}
-                </TableCell>
-                <TableCell className="py-2.5 pr-4 text-right font-mono text-sm text-ink">
-                  {stat.costUsd > 0 ? formatExtractionCost(stat.costUsd) : "—"}
-                </TableCell>
+        {/* Capped height with internal scroll — the daily view has 30 rows,
+            which would otherwise push everything below the panel far down
+            the page. */}
+        <div className="max-h-80 overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="sticky top-0 z-10 bg-canvas py-3 pl-4">
+                  {period === "daily" ? "Day" : period === "weekly" ? "Week" : "Month"}
+                </TableHead>
+                <TableHead className="sticky top-0 z-10 bg-canvas py-3 text-right">Requests</TableHead>
+                <TableHead className="sticky top-0 z-10 bg-canvas py-3 text-right">Credits</TableHead>
+                <TableHead className="sticky top-0 z-10 bg-canvas py-3 pr-4 text-right">Cost</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {[...series].reverse().map((stat) => (
+                <TableRow key={stat.key}>
+                  <TableCell className="py-2.5 pl-4 text-sm text-ink">{stat.label}</TableCell>
+                  <TableCell className="py-2.5 text-right font-mono text-sm text-body">
+                    {stat.requests.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="py-2.5 text-right font-mono text-sm text-body">
+                    {stat.credits.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="py-2.5 pr-4 text-right font-mono text-sm text-ink">
+                    {stat.costUsd > 0 ? formatExtractionCost(stat.costUsd) : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
