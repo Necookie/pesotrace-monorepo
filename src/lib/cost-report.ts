@@ -13,6 +13,7 @@ import {
   formatWeekKeyShort,
   formatMonthKeyShort,
 } from "@/lib/time";
+import { escapeCsv } from "@/lib/csv";
 
 /** The subset of a credit_ledger row that cost reporting reads. */
 export type LedgerCostEntry = {
@@ -106,4 +107,13 @@ export function buildCostReport(entries: LedgerCostEntry[], now: Date = new Date
     thisMonth: byMonth.get(thisMonthKey) ?? zeroTotals(),
     lastMonth: byMonth.get(lastMonthKey) ?? zeroTotals(),
   };
+}
+
+/** Renders a daily/weekly/monthly PeriodStat series as a downloadable CSV, oldest first. */
+export function periodStatsToCsv(stats: PeriodStat[], periodLabel: string): string {
+  const header = [periodLabel, "Requests", "Credits", "Cost (USD)"];
+  const lines = stats.map((s) =>
+    [s.label, s.requests, s.credits, s.costUsd.toFixed(6)].map(escapeCsv).join(",")
+  );
+  return "\uFEFF" + [header.join(","), ...lines].join("\n");
 }

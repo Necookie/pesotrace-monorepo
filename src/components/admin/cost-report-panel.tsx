@@ -1,12 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatExtractionCost } from "@/lib/format";
 import { CostTrendChart } from "@/components/charts/lazy";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import type { CostReport, PeriodStat, PeriodTotals } from "@/lib/cost-report";
+import { periodStatsToCsv, type CostReport, type PeriodStat, type PeriodTotals } from "@/lib/cost-report";
+
+function downloadCsv(csv: string, filename: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 const PERIODS = [
   { value: "daily", label: "Daily" },
@@ -53,11 +65,35 @@ function StatCard({
 
 const PERIOD_COPY: Record<
   Period,
-  { current: keyof CostReport; prior: keyof CostReport; currentLabel: string; priorLabel: string }
+  {
+    current: keyof CostReport;
+    prior: keyof CostReport;
+    currentLabel: string;
+    priorLabel: string;
+    columnLabel: string;
+  }
 > = {
-  daily: { current: "today", prior: "yesterday", currentLabel: "Today", priorLabel: "yesterday" },
-  weekly: { current: "thisWeek", prior: "lastWeek", currentLabel: "This week", priorLabel: "last week" },
-  monthly: { current: "thisMonth", prior: "lastMonth", currentLabel: "This month", priorLabel: "last month" },
+  daily: {
+    current: "today",
+    prior: "yesterday",
+    currentLabel: "Today",
+    priorLabel: "yesterday",
+    columnLabel: "Day",
+  },
+  weekly: {
+    current: "thisWeek",
+    prior: "lastWeek",
+    currentLabel: "This week",
+    priorLabel: "last week",
+    columnLabel: "Week",
+  },
+  monthly: {
+    current: "thisMonth",
+    prior: "lastMonth",
+    currentLabel: "This month",
+    priorLabel: "last month",
+    columnLabel: "Month",
+  },
 };
 
 /**
@@ -74,24 +110,41 @@ export function CostReportPanel({ report, title = "Cost & usage" }: { report: Co
   const prior = report[copy.prior] as PeriodTotals;
   const pct = deltaPct(current.costUsd, prior.costUsd);
 
+  function handleExport() {
+    const csv = periodStatsToCsv(series, copy.columnLabel);
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    downloadCsv(csv, `${slug}-${period}.csv`);
+  }
+
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-ink">{title}</h2>
-        <div className="flex w-fit rounded-pill bg-surface-strong p-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => setPeriod(p.value)}
-              className={cn(
-                "rounded-pill px-4 py-1.5 text-sm font-medium transition-colors",
-                period === p.value ? "bg-canvas text-ink shadow-sm" : "text-body"
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex w-fit rounded-pill bg-surface-strong p-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setPeriod(p.value)}
+                className={cn(
+                  "rounded-pill px-4 py-1.5 text-sm font-medium transition-colors",
+                  period === p.value ? "bg-canvas text-ink shadow-sm" : "text-body"
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={handleExport}
+            aria-label={`Export ${period} report as CSV`}
+            title="Export CSV"
+            className="flex size-9 items-center justify-center rounded-pill border border-hairline text-muted hover:bg-surface-strong hover:text-ink"
+          >
+            <Download className="size-4" />
+          </button>
         </div>
       </div>
 
@@ -118,7 +171,7 @@ export function CostReportPanel({ report, title = "Cost & usage" }: { report: Co
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="sticky top-0 z-10 bg-canvas py-3 pl-4">
-                  {period === "daily" ? "Day" : period === "weekly" ? "Week" : "Month"}
+                  {copy.columnLabel}
                 </TableHead>
                 <TableHead className="sticky top-0 z-10 bg-canvas py-3 text-right">Requests</TableHead>
                 <TableHead className="sticky top-0 z-10 bg-canvas py-3 text-right">Credits</TableHead>

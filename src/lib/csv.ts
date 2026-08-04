@@ -3,7 +3,7 @@ import { last4Ref } from "@/lib/schemas/transaction";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
-function escapeCsv(value: string | number | null): string {
+export function escapeCsv(value: string | number | null): string {
   let str = String(value ?? "");
   // Neutralize formula injection: a leading =, +, -, or @ makes Excel/Sheets
   // evaluate the cell as a formula when opened. Source data here can come

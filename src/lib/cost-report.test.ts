@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildCostReport } from "./cost-report";
+import { buildCostReport, periodStatsToCsv } from "./cost-report";
 
 // "now" pinned to 2026-07-27T03:00:00Z — a Manila Monday (11:00 AM local),
 // matching the fixture date used across time.test.ts.
@@ -79,5 +79,29 @@ describe("buildCostReport", () => {
     const report = buildCostReport([], NOW);
     expect(report.today).toEqual({ costUsd: 0, credits: 0, requests: 0 });
     expect(report.thisMonth).toEqual({ costUsd: 0, credits: 0, requests: 0 });
+  });
+});
+
+describe("periodStatsToCsv", () => {
+  const stats = [
+    { key: "2026-07-26", label: "Jul 26", costUsd: 0.0123, credits: 4, requests: 2 },
+    { key: "2026-07-27", label: "Jul 27", costUsd: 0, credits: 0, requests: 0 },
+  ];
+
+  it("prepends a UTF-8 BOM so spreadsheet apps auto-detect the encoding", () => {
+    expect(periodStatsToCsv(stats, "Day")).toMatch(/^﻿/);
+  });
+
+  it("includes a header row using the given period label", () => {
+    const csv = periodStatsToCsv(stats, "Day");
+    const [header] = csv.replace(/^﻿/, "").split("\n");
+    expect(header).toBe("Day,Requests,Credits,Cost (USD)");
+  });
+
+  it("renders one row per stat, oldest first, cost to 6 decimals", () => {
+    const csv = periodStatsToCsv(stats, "Day");
+    const lines = csv.replace(/^﻿/, "").split("\n");
+    expect(lines[1]).toBe("Jul 26,2,4,0.012300");
+    expect(lines[2]).toBe("Jul 27,0,0,0.000000");
   });
 });
