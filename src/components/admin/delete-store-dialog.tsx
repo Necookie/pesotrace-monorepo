@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { deleteStore } from "@/app/(admin)/admin/actions";
+
+const SAFETY_DELAY_SECONDS = 3;
 
 export function DeleteStoreDialog({
   storeId,
@@ -29,10 +31,25 @@ export function DeleteStoreDialog({
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [countdown, setCountdown] = useState(SAFETY_DELAY_SECONDS);
+
+  // Reset countdown whenever the dialog opens and the store name is typed correctly.
+  const nameMatches = confirmText === storeName;
+
+  useEffect(() => {
+    if (!nameMatches || !open) {
+      setCountdown(SAFETY_DELAY_SECONDS);
+      return;
+    }
+    if (countdown <= 0) return;
+    const id = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [nameMatches, open, countdown]);
 
   function resetAndClose() {
     setOpen(false);
     setConfirmText("");
+    setCountdown(SAFETY_DELAY_SECONDS);
   }
 
   async function handleDelete() {
@@ -48,6 +65,8 @@ export function DeleteStoreDialog({
     resetAndClose();
     onDeleted();
   }
+
+  const deleteReady = nameMatches && countdown <= 0 && !deleting;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -68,11 +87,17 @@ export function DeleteStoreDialog({
           <Input
             id="confirm-delete-store"
             value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
+            onChange={(e) => { setConfirmText(e.target.value); setCountdown(SAFETY_DELAY_SECONDS); }}
             placeholder={storeName}
             className="mt-1 font-mono"
             autoComplete="off"
           />
+          {nameMatches && countdown > 0 && (
+            <p className="mt-1.5 text-xs text-muted">
+              Delete button unlocks in{" "}
+              <span className="font-mono font-medium text-down">{countdown}s</span>…
+            </p>
+          )}
         </div>
 
         <DialogFooter>
@@ -82,10 +107,14 @@ export function DeleteStoreDialog({
           <Button
             type="button"
             variant="destructive"
-            disabled={confirmText !== storeName || deleting}
+            disabled={!deleteReady}
             onClick={handleDelete}
           >
-            {deleting ? "Deleting..." : "Permanently delete"}
+            {deleting
+              ? "Deleting..."
+              : nameMatches && countdown > 0
+              ? `Wait ${countdown}s…`
+              : "Permanently delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

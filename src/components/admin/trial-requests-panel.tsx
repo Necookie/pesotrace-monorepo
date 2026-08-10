@@ -11,7 +11,14 @@ import type { PendingCreditRequest } from "@/lib/queries/admin";
 
 const DEFAULT_GRANT = 50;
 
-export function TrialRequestsPanel({ requests }: { requests: PendingCreditRequest[] }) {
+export function TrialRequestsPanel({
+  requests,
+  balanceByStore = {},
+}: {
+  requests: PendingCreditRequest[];
+  /** Optional map of storeId → current credit balance for preview. */
+  balanceByStore?: Record<string, number>;
+}) {
   const router = useRouter();
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -66,6 +73,14 @@ export function TrialRequestsPanel({ requests }: { requests: PendingCreditReques
             <div className="min-w-0 flex-1">
               <p className="font-medium text-ink">{request.storeName}</p>
               <p className="text-xs text-muted">Requested {formatDateTime(request.createdAt)}</p>
+              {balanceByStore[request.storeId] !== undefined && (
+                <p className="mt-0.5 text-xs text-muted">
+                  Current balance:{" "}
+                  <span className={balanceByStore[request.storeId] <= 0 ? "font-mono font-medium text-down" : "font-mono font-medium text-ink"}>
+                    {balanceByStore[request.storeId].toLocaleString()}
+                  </span>
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Input

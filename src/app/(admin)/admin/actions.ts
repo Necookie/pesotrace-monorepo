@@ -434,14 +434,22 @@ export async function deleteStore(input: { storeId: string; confirmName: string 
 
 const updatePlatformSettingsSchema = z.object({
   lowBalanceThreshold: z.number().min(0, "Threshold can't be negative").max(100000, "That's not a realistic threshold"),
+  defaultGrantAmount: z.number().positive("Default grant amount must be positive").max(100000, "That's a lot of credits"),
 });
 
 /**
  * The low-balance cron reads this on every run — moving it here instead of
  * a hardcoded constant means bumping the threshold no longer needs a code
  * change and a deploy.
+ *
+ * defaultGrantAmount pre-fills the trial approve input so each operator
+ * doesn't have to remember the current "house default" — still overrideable
+ * per request.
  */
-export async function updatePlatformSettings(input: { lowBalanceThreshold: number }) {
+export async function updatePlatformSettings(input: {
+  lowBalanceThreshold: number;
+  defaultGrantAmount: number;
+}) {
   const parsed = updatePlatformSettingsSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -472,10 +480,11 @@ export async function updatePlatformSettings(input: { lowBalanceThreshold: numbe
     adminUserId,
     "update_platform_settings",
     null,
-    `Low-balance threshold ${parsed.data.lowBalanceThreshold}`,
+    `Low-balance threshold ${parsed.data.lowBalanceThreshold}, default grant ${parsed.data.defaultGrantAmount}`,
     {
       previousLowBalanceThreshold: previous?.low_balance_threshold ?? null,
       newLowBalanceThreshold: parsed.data.lowBalanceThreshold,
+      newDefaultGrantAmount: parsed.data.defaultGrantAmount,
     }
   );
 

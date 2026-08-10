@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Wallet, TrendingUp } from "lucide-react";
+import { Wallet, Download } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,33 @@ import { BulkGrantCreditsDialog } from "@/components/admin/bulk-grant-credits-di
 import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 import { StoreSearch } from "@/components/admin/store-search";
 import { SortableHeader } from "@/components/admin/sortable-header";
+import { StoreStatusBadge } from "@/components/admin/store-status-badge";
 import type { AdminStoreRow } from "@/lib/queries/admin";
+
+function exportStoresCsv(stores: AdminStoreRow[]) {
+  const headers = ["Store", "Status", "Credit balance", "Requests today", "Extractions (30d)", "Real cost (30d)", "Last activity"];
+  const rows = stores.map((s) => [
+    s.storeName,
+    s.suspended ? "Suspended" : s.balance <= 0 ? "Out of credits" : "Active",
+    String(s.balance),
+    String(s.requestsToday),
+    String(s.extractionsThisMonth),
+    formatExtractionCost(s.costUsdThisMonth),
+    s.lastActivityAt ? formatDateTime(s.lastActivityAt) : "",
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `stores-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export function StoresOverviewTable({
   stores,
@@ -33,8 +59,11 @@ export function StoresOverviewTable({
   const headerParams = new URLSearchParams(headerParamsString);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [suspendedOnly, setSuspendedOnly] = useState(false);
 
-  const allSelected = stores.length > 0 && selected.size === stores.length;
+  const visibleStores = suspendedOnly ? stores.filter((s) => s.suspended) : stores;
+
+  const allSelected = visibleStores.length > 0 && selected.size === visibleStores.length;
   const someSelected = selected.size > 0 && !allSelected;
 
   function toggleOne(id: string) {
@@ -47,16 +76,18 @@ export function StoresOverviewTable({
   }
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(stores.map((s) => s.storeId)));
+    setSelected(allSelected ? new Set() : new Set(visibleStores.map((s) => s.storeId)));
   }
 
-  const selectedStores = stores.filter((s) => selected.has(s.storeId));
+  const selectedStores = visibleStores.filter((s) => selected.has(s.storeId));
+  const suspendedCount = stores.filter((s) => s.suspended).length;
 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-ink">
-          All stores <span className="font-normal text-muted">({stores.length})</span>
+          {suspendedOnly ? "Suspended stores" : "All stores"}{" "}
+          <span className="font-normal text-muted">({visibleStores.length})</span>
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           {selected.size > 0 && (
@@ -65,6 +96,29 @@ export function StoresOverviewTable({
               Grant credits to {selected.size}
             </Button>
           )}
+          {suspendedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setSuspendedOnly(!suspendedOnly); setSelected(new Set()); }}
+              className={cn(
+                "rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors",
+                suspendedOnly
+                  ? "border-down/50 bg-down/10 text-down"
+                  : "border-hairline text-muted hover:border-ink/30 hover:text-ink"
+              )}
+            >
+              {suspendedOnly ? "Show all" : `Suspended (${suspendedCount})`}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => exportStoresCsv(visibleStores)}
+            title="Export filtered list as CSV"
+            aria-label="Export stores as CSV"
+            className="flex size-8 items-center justify-center rounded-pill border border-hairline text-muted hover:bg-surface-strong hover:text-ink"
+          >
+            <Download className="size-4" />
+          </button>
           <StoreSearch />
         </div>
       </div>
@@ -101,7 +155,7 @@ export function StoresOverviewTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {stores.map((store) => (
+            {visibleStores.map((store) => (
               <TableRow
                 key={store.storeId}
                 className={cn((store.balance <= 0 || store.suspended) && "border-l-2 border-l-down bg-down/5")}
@@ -117,25 +171,9 @@ export function StoresOverviewTable({
                   <Link href={`/admin/stores/${store.storeId}`} className="font-medium text-ink hover:text-primary">
                     {store.storeName}
                   </Link>
-                  {store.suspended && (
-                    <span className="ml-2 inline-block rounded-pill bg-down/10 px-2 py-0.5 text-[11px] font-medium text-down">
-                      Suspended
-                    </span>
-                  )}
-                  {store.balance <= 0 && (
-                    <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
-                      Out of credits
-                    </span>
-                  )}
-                  {store.usageAnomaly && (
-                    <span
-                      title="Today's requests are a significant spike over this store's usual pace"
-                      className="ml-2 inline-flex items-center gap-0.5 rounded-pill bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                    >
-                      <TrendingUp className="size-3" />
-                      Spike
-                    </span>
-                  )}
+                  {store.suspended && <StoreStatusBadge status="suspended" />}
+                  {store.balance <= 0 && <StoreStatusBadge status="out_of_credits" />}
+                  {store.usageAnomaly && <StoreStatusBadge status="spike" />}
                 </TableCell>
                 <TableCell className="max-w-56 py-3">
                   <FeeConfigBadge summary={store.feeConfig} />
@@ -171,10 +209,10 @@ export function StoresOverviewTable({
                 </TableCell>
               </TableRow>
             ))}
-            {stores.length === 0 && (
+            {visibleStores.length === 0 && (
               <TableRow>
                 <TableCell colSpan={10} className="py-10 text-center text-muted">
-                  {query ? `No stores match "${query}".` : "No stores yet."}
+                  {suspendedOnly ? "No suspended stores." : query ? `No stores match "${query}".` : "No stores yet."}
                 </TableCell>
               </TableRow>
             )}
@@ -208,22 +246,9 @@ export function StoresOverviewTable({
                   >
                     {store.storeName}
                   </Link>
-                  {store.suspended && (
-                    <span className="ml-2 inline-block rounded-pill bg-down/10 px-2 py-0.5 text-[11px] font-medium text-down">
-                      Suspended
-                    </span>
-                  )}
-                  {store.balance <= 0 && (
-                    <span className="ml-2 inline-block rounded-pill bg-surface-strong px-2 py-0.5 text-[11px] font-medium text-down">
-                      Out of credits
-                    </span>
-                  )}
-                  {store.usageAnomaly && (
-                    <span className="ml-2 inline-flex items-center gap-0.5 rounded-pill bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                      <TrendingUp className="size-3" />
-                      Spike
-                    </span>
-                  )}
+                  {store.suspended && <StoreStatusBadge status="suspended" />}
+                  {store.balance <= 0 && <StoreStatusBadge status="out_of_credits" />}
+                  {store.usageAnomaly && <StoreStatusBadge status="spike" />}
                 </div>
               </div>
               <div className="flex shrink-0 items-center">

@@ -15,7 +15,10 @@ export default async function PlatformSettingsPage() {
       </p>
 
       <div className="mt-6">
-        <PlatformSettingsForm initialThreshold={settings.lowBalanceThreshold} />
+        <PlatformSettingsForm
+          initialThreshold={settings.lowBalanceThreshold}
+          initialDefaultGrant={settings.defaultGrantAmount}
+        />
         {settings.updatedBy && (
           <p className="mt-2 text-xs text-muted">
             Last changed {formatDateTime(settings.updatedAt)} by {settings.updatedBy}

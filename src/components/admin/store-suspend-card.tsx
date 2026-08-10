@@ -19,6 +19,17 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { suspendStore, unsuspendStore } from "@/app/(admin)/admin/actions";
 
+/** Returns a human-readable "X days ago" / "X hours ago" string for a past ISO timestamp. */
+function suspendedDuration(suspendedAt: string): string {
+  const ms = Date.now() - new Date(suspendedAt).getTime();
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
 export function StoreSuspendCard({
   storeId,
   storeName,
@@ -81,7 +92,14 @@ export function StoreSuspendCard({
               Extraction is blocked for this store. Everything else — data, staff, credits — is untouched.
             </p>
             {suspendedReason && <p className="mt-2 text-sm text-body">&ldquo;{suspendedReason}&rdquo;</p>}
-            {suspendedAt && <p className="mt-1 text-xs text-muted">Since {formatDateTime(suspendedAt)}</p>}
+            {suspendedAt && (
+              <p className="mt-1 text-xs text-muted">
+                Suspended{" "}
+                <span className="font-medium text-down">{suspendedDuration(suspendedAt)}</span>
+                {" · "}
+                <span title={suspendedAt}>{formatDateTime(suspendedAt)}</span>
+              </p>
+            )}
             <Button type="button" variant="outline" className="mt-3" onClick={handleUnsuspend} disabled={saving}>
               {saving ? "Restoring..." : "Unsuspend store"}
             </Button>

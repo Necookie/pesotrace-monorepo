@@ -1,10 +1,11 @@
-import { Store, Zap, Wallet, DollarSign, AlertTriangle } from "lucide-react";
+import { Store, Zap, Wallet, DollarSign, AlertTriangle, Activity } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   listStoresWithCredits,
   listPendingCreditRequests,
   getPlatformCostReport,
   listRecentExtractionFailures,
+  getPlatformOverviewTrends,
   type AdminStoreRow,
 } from "@/lib/queries/admin";
 import { CostReportPanel } from "@/components/admin/cost-report-panel";
@@ -46,11 +47,12 @@ export default async function AdminOverviewPage({
 }) {
   const params = await searchParams;
   const supabase = createAdminClient();
-  const [allStores, pendingRequests, platformCostReport, extractionFailures] = await Promise.all([
+  const [allStores, pendingRequests, platformCostReport, extractionFailures, trends] = await Promise.all([
     listStoresWithCredits(supabase),
     listPendingCreditRequests(supabase),
     getPlatformCostReport(supabase),
     listRecentExtractionFailures(supabase),
+    getPlatformOverviewTrends(supabase),
   ]);
 
   const query = (params.q ?? "").trim().toLowerCase();
@@ -78,8 +80,27 @@ export default async function AdminOverviewPage({
       <p className="mt-1 text-sm text-body">Credit balances and usage across every store.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <AdminKpiTile label="Stores" value={String(stores.length)} icon={Store} accent="primary" />
-        <AdminKpiTile label="Requests today" value={String(requestsToday)} icon={Zap} accent="primary" />
+        <AdminKpiTile
+          label="Stores"
+          value={String(stores.length)}
+          icon={Store}
+          accent="primary"
+          subtitle={`${trends.activeStoreCount} active this month`}
+        />
+        <AdminKpiTile
+          label="Requests today"
+          value={String(requestsToday)}
+          icon={Zap}
+          accent="primary"
+          trend={trends.extractionsTrend}
+        />
+        <AdminKpiTile
+          label="Active stores"
+          value={String(trends.activeStoreCount)}
+          icon={Activity}
+          accent="up"
+          subtitle="extractions this month"
+        />
         <AdminKpiTile
           label="Total credit balance"
           value={totalBalance.toLocaleString()}
@@ -91,6 +112,7 @@ export default async function AdminOverviewPage({
           value={formatExtractionCost(totalCost30d)}
           icon={DollarSign}
           accent="muted"
+          trend={trends.costTrend}
         />
         <AdminKpiTile
           label="Out of credits"

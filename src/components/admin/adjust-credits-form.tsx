@@ -6,7 +6,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { adjustStoreCredits } from "@/app/(admin)/admin/actions";
+
+const QUICK_AMOUNTS = [10, 50, 100, -10] as const;
 
 export function AdjustCreditsForm({ storeId }: { storeId: string }) {
   const router = useRouter();
@@ -44,7 +47,27 @@ export function AdjustCreditsForm({ storeId }: { storeId: string }) {
         Positive to grant/top up, negative to remove. A note is required for the audit trail.
       </p>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-[160px_1fr]">
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {QUICK_AMOUNTS.map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            onClick={() => setDelta(String(amount))}
+            className={cn(
+              "rounded-pill border px-3 py-1 text-xs font-mono font-medium transition-colors",
+              delta === String(amount)
+                ? amount > 0
+                  ? "border-up/50 bg-up/10 text-up"
+                  : "border-down/50 bg-down/10 text-down"
+                : "border-hairline text-muted hover:border-ink/30 hover:text-ink"
+            )}
+          >
+            {amount > 0 ? `+${amount}` : amount}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-[160px_1fr]">
         <div className="space-y-1.5">
           <Label className="text-xs text-muted">Amount</Label>
           <Input

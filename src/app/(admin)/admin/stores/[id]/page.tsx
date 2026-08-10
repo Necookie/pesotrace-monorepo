@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Eye, Wallet, Zap, CalendarDays } from "lucide-react";
+import { ArrowLeft, Eye, Wallet, Zap, CalendarDays, Users } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getStoreCreditDetail,
   listStoreFeeChanges,
   getStoreTransactionsWithReceipts,
   getStoreCostReport,
+  getStoreCreditBalanceHistory,
+  getStoreMemberCount,
 } from "@/lib/queries/admin";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { formatExtractionCost, formatDateTime } from "@/lib/format";
@@ -21,6 +23,7 @@ import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
 import { StoreReceiptVerification } from "@/components/admin/store-receipt-verification";
 import { CostReportPanel } from "@/components/admin/cost-report-panel";
+import { StoreCreditBalanceSparkline } from "@/components/admin/store-credit-history-chart";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { Pagination } from "@/components/ui/pagination";
@@ -72,7 +75,7 @@ export default async function AdminStoreDetailPage({
 
   if (!detail) notFound();
 
-  const [{ data: store }, feeChanges, receipts, costReport] = await Promise.all([
+  const [{ data: store }, feeChanges, receipts, costReport, balanceHistory, memberCount] = await Promise.all([
     supabase
       .from("stores")
       .select("fee_tier_config, fee_formula, suspended, suspended_at, suspended_reason, admin_notes")
@@ -81,6 +84,8 @@ export default async function AdminStoreDetailPage({
     listStoreFeeChanges(supabase, id),
     getStoreTransactionsWithReceipts(supabase, id, RECEIPT_PAGE_SIZE, receiptOffset),
     getStoreCostReport(supabase, id),
+    getStoreCreditBalanceHistory(supabase, id),
+    getStoreMemberCount(supabase, id),
   ]);
 
   const ledgerTotalPages = Math.max(1, Math.ceil(detail.ledgerTotal / LEDGER_PAGE_SIZE));
@@ -120,7 +125,7 @@ export default async function AdminStoreDetailPage({
         <h1 className="mt-2 text-2xl font-medium text-ink">{detail.storeName}</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <AdminKpiTile
           label="Credit balance"
           value={detail.balance.toLocaleString()}
@@ -134,7 +139,18 @@ export default async function AdminStoreDetailPage({
           icon={CalendarDays}
           accent="primary"
         />
+        <AdminKpiTile
+          label="Team members"
+          value={String(memberCount)}
+          icon={Users}
+          accent="muted"
+          subtitle={memberCount === 1 ? "owner only" : "staff + owner"}
+        />
       </div>
+
+      {balanceHistory.length >= 2 && (
+        <StoreCreditBalanceSparkline data={balanceHistory} />
+      )}
 
       <StoreAdminNotesCard storeId={detail.storeId} initialNotes={store?.admin_notes ?? null} />
 

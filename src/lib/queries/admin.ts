@@ -20,6 +20,81 @@ export type StoreAnalytics = {
   requestsThisWeek: number;
 };
 
+export type StoreExtractionFailures = {
+  storeId: string;
+  storeName: string;
+  failureCount: number;
+  totalExtractions: number;
+  /** Percentage of extractions that failed, 0–100 rounded to 1 decimal place. */
+  failureRatePct: number;
+  wastedCostUsd: number;
+};
+
+/**
+ * Stores with failed extractions in the last 7 days, worst first. A failed
+ * extraction still bills Gemini but charges the store 0 credits (see
+ * consume_credit's p_credits: 0 path in extract/route.ts) — that's the only
+ * signal a failure leaves in the ledger, since the actual error text isn't
+ * persisted anywhere. Surfacing the pattern (not the message) still catches
+ * a bad prompt or a systemic API issue before it becomes a pile of tickets.
+ *
+ * Also fetches total extractions per affected store so the panel can display
+ * a failure rate percentage rather than just a raw count.
+ */
+export async function listRecentExtractionFailures(
+  supabase: SupabaseClient<Database>,
+  days = FAILURE_WINDOW_DAYS
+): Promise<StoreExtractionFailures[]> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: entries, error } = await supabase
+    .from("credit_ledger")
+    .select("store_id, cost_usd, credit_delta")
+    .eq("entry_type", "consumption")
+    .gte("created_at", since);
+
+  if (error) throw error;
+  if (!entries || entries.length === 0) return [];
+
+  const byStore = new Map<string, { failureCount: number; totalExtractions: number; wastedCostUsd: number }>();
+  for (const entry of entries) {
+    const existing = byStore.get(entry.store_id) ?? { failureCount: 0, totalExtractions: 0, wastedCostUsd: 0 };
+    existing.totalExtractions += 1;
+    if (entry.credit_delta === 0 && entry.cost_usd > 0) {
+      existing.failureCount += 1;
+      existing.wastedCostUsd += entry.cost_usd;
+    }
+    byStore.set(entry.store_id, existing);
+  }
+
+  // Only surface stores that actually have failures.
+  const failingStoreIds = [...byStore.entries()]
+    .filter(([, stats]) => stats.failureCount > 0)
+    .map(([storeId]) => storeId);
+
+  if (failingStoreIds.length === 0) return [];
+
+  const { data: stores, error: storesError } = await supabase.from("stores").select("id, name").in("id", failingStoreIds);
+  if (storesError) throw storesError;
+  const nameByStoreId = new Map((stores ?? []).map((s) => [s.id, s.name]));
+
+  return failingStoreIds
+    .map((storeId) => {
+      const stats = byStore.get(storeId)!;
+      return {
+        storeId,
+        storeName: nameByStoreId.get(storeId) ?? "Deleted store",
+        failureCount: stats.failureCount,
+        totalExtractions: stats.totalExtractions,
+        failureRatePct: stats.totalExtractions > 0
+          ? Math.round((stats.failureCount / stats.totalExtractions) * 1000) / 10
+          : 0,
+        wastedCostUsd: stats.wastedCostUsd,
+      };
+    })
+    .sort((a, b) => b.failureCount - a.failureCount);
+}
+
 /**
  * Date-ranged aggregation, independent of the LEDGER_HISTORY_LIMIT used for
  * the ledger history table — a high-volume store's last 200 ledger rows
@@ -264,6 +339,124 @@ export async function listStoresWithCredits(
  * growing, flat, or dropping, without adding up 30 per-store sparklines
  * themselves.
  */
+export type PlatformOverviewTrends = {
+  /** % change in total extractions: current 7d vs prior 7d */
+  extractionsTrend: number | null;
+  /** % change in platform real cost: current 7d vs prior 7d */
+  costTrend: number | null;
+  /** Count of stores that had at least one extraction this month */
+  activeStoreCount: number;
+};
+
+/**
+ * Computes percentage-delta trends for the admin overview KPI tiles by
+ * comparing the current 7-day window to the prior 7-day window. Derived
+ * from the same ledger query as listStoresWithCredits but kept separate so
+ * the overview page can call it independently without re-reading all stores.
+ */
+export async function getPlatformOverviewTrends(
+  supabase: SupabaseClient<Database>
+): Promise<PlatformOverviewTrends> {
+  const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data: ledger14d }, { data: ledger30d }] = await Promise.all([
+    supabase
+      .from("credit_ledger")
+      .select("store_id, cost_usd, created_at")
+      .eq("entry_type", "consumption")
+      .gte("created_at", since14d),
+    supabase
+      .from("credit_ledger")
+      .select("store_id")
+      .eq("entry_type", "consumption")
+      .gte("created_at", since30d),
+  ]);
+
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  let currentExtractions = 0;
+  let priorExtractions = 0;
+  let currentCost = 0;
+  let priorCost = 0;
+
+  for (const entry of ledger14d ?? []) {
+    if (entry.created_at >= since7d) {
+      currentExtractions += 1;
+      currentCost += entry.cost_usd;
+    } else {
+      priorExtractions += 1;
+      priorCost += entry.cost_usd;
+    }
+  }
+
+  function pctDelta(current: number, prior: number): number | null {
+    if (prior <= 0) return null;
+    return ((current - prior) / prior) * 100;
+  }
+
+  const activeStoreIds = new Set((ledger30d ?? []).map((e) => e.store_id));
+
+  return {
+    extractionsTrend: pctDelta(currentExtractions, priorExtractions),
+    costTrend: pctDelta(currentCost, priorCost),
+    activeStoreCount: activeStoreIds.size,
+  };
+}
+
+export type CreditBalancePoint = {
+  label: string;
+  balance: number;
+};
+
+/**
+ * Reconstructs the credit balance at end-of-day for each of the past 30 days
+ * by replaying all ledger entries (any type) in chronological order. This gives
+ * operators a quick visual of whether a store has been steadily consuming or is
+ * sitting on an idle balance — useful context before adjusting credits.
+ */
+export async function getStoreCreditBalanceHistory(
+  supabase: SupabaseClient<Database>,
+  storeId: string,
+  days = 30
+): Promise<CreditBalancePoint[]> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data: ledger }, { data: credit }] = await Promise.all([
+    supabase
+      .from("credit_ledger")
+      .select("credit_delta, created_at")
+      .eq("store_id", storeId)
+      .gte("created_at", since)
+      .order("created_at", { ascending: true }),
+    supabase.from("store_credits").select("balance").eq("store_id", storeId).maybeSingle(),
+  ]);
+
+  const currentBalance = credit?.balance ?? 0;
+  const entries = ledger ?? [];
+
+  // Walk backwards from current balance to reconstruct historical balances.
+  // The running total at any point is current balance minus all deltas after that point.
+  const deltaAfterDay = new Map<string, number>();
+  for (const entry of entries) {
+    const key = storeDayKey(entry.created_at);
+    deltaAfterDay.set(key, (deltaAfterDay.get(key) ?? 0) + entry.credit_delta);
+  }
+
+  const allDays = recentDayKeys(days, new Date());
+  const points: CreditBalancePoint[] = [];
+  let runningBalance = currentBalance;
+
+  // Iterate newest to oldest, subtracting each day's net delta to get the balance at end-of-previous-day.
+  for (let i = 0; i < allDays.length; i++) {
+    const key = allDays[i];
+    points.unshift({ label: formatDate(key), balance: Math.max(0, runningBalance) });
+    runningBalance -= deltaAfterDay.get(key) ?? 0;
+  }
+
+  return points;
+}
+
 /**
  * Daily/weekly/monthly cost report for one store — the per-store analytics
  * ask (usage stats, daily/weekly/monthly cost). Fetches a wide-enough window
@@ -298,6 +491,25 @@ export async function getPlatformCostReport(supabase: SupabaseClient<Database>):
 
   if (error) throw error;
   return buildCostReport(data ?? []);
+}
+
+/**
+ * Returns the number of user profiles belonging to a store. Useful for an
+ * operator to understand whether a store has any active staff beyond the
+ * owner — a single-user store vs. a busy multi-operator setup changes how
+ * aggressively you'd cut their credits.
+ */
+export async function getStoreMemberCount(
+  supabase: SupabaseClient<Database>,
+  storeId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId);
+
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export type PendingCreditRequest = {
@@ -604,6 +816,8 @@ const DEFAULT_LOW_BALANCE_THRESHOLD = 10;
 
 export type PlatformSettings = {
   lowBalanceThreshold: number;
+  /** Pre-fill amount for trial credit grants — operator-configured, overrideable per request. */
+  defaultGrantAmount: number;
   updatedAt: string;
   updatedBy: string | null;
 };
@@ -626,6 +840,7 @@ export async function getPlatformSettings(supabase: SupabaseClient<Database>): P
 
   return {
     lowBalanceThreshold: data?.low_balance_threshold ?? DEFAULT_LOW_BALANCE_THRESHOLD,
+    defaultGrantAmount: (data as Record<string, unknown> | null)?.default_grant_amount as number | undefined ?? 50,
     updatedAt: data?.updated_at ?? new Date(0).toISOString(),
     updatedBy: data?.updated_by ?? null,
   };
