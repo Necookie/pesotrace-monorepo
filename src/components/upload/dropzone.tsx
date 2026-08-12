@@ -40,8 +40,9 @@ export function Dropzone({
     const validFiles: File[] = [];
     const maxSizeBytes = preset.maxSizeMb * 1024 * 1024;
 
+    const allowedTypes = preset.mimeTypes as readonly string[];
     for (const f of allFiles) {
-      if (!preset.mimeTypes.includes(f.type as any)) {
+      if (!allowedTypes.includes(f.type)) {
         toast.error(`"${f.name}" is an unsupported format. Please upload ${kind === "pdf" ? "a PDF" : "a PNG or JPG"}.`);
         continue;
       }
