@@ -68,3 +68,26 @@ export function formatDate(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   return dateFormatter.format(d);
 }
+
+export function formatRelativeTime(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "Never";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Never";
+
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return "Just now";
+
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "Just now";
+
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}h ago`;
+
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 30) return `${diffDay}d ago`;
+
+  return formatDate(iso);
+}

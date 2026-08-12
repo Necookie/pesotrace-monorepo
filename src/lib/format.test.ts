@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatDateTime, formatDate } from "./format";
+import { formatDateTime, formatDate, formatRelativeTime } from "./format";
 
 describe("formatDateTime", () => {
   it("renders the stored wall-clock time, not a timezone-shifted one", () => {
@@ -40,5 +40,25 @@ describe("formatDate", () => {
 
   it("formats a date-only key on its own day", () => {
     expect(formatDate("2026-01-01")).toContain("Jan 1");
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const baseNow = new Date("2026-08-12T12:00:00Z");
+
+  it("handles null, undefined, or invalid dates", () => {
+    expect(formatRelativeTime(null, baseNow)).toBe("Never");
+    expect(formatRelativeTime(undefined, baseNow)).toBe("Never");
+    expect(formatRelativeTime("invalid", baseNow)).toBe("Never");
+  });
+
+  it("formats recent times under an hour", () => {
+    expect(formatRelativeTime("2026-08-12T11:59:45Z", baseNow)).toBe("Just now");
+    expect(formatRelativeTime("2026-08-12T11:45:00Z", baseNow)).toBe("15m ago");
+  });
+
+  it("formats hours and days ago", () => {
+    expect(formatRelativeTime("2026-08-12T09:00:00Z", baseNow)).toBe("3h ago");
+    expect(formatRelativeTime("2026-08-10T12:00:00Z", baseNow)).toBe("2d ago");
   });
 });

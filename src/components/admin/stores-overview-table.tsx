@@ -7,7 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatExtractionCost, formatDateTime } from "@/lib/format";
+import { formatExtractionCost, formatDateTime, formatRelativeTime } from "@/lib/format";
 import { CreditUsageChart } from "@/components/charts/lazy";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
 import { QuickAdjustCreditsDialog } from "@/components/admin/quick-adjust-credits-dialog";
@@ -198,8 +198,11 @@ export function StoresOverviewTable({
                 <TableCell className="py-3">
                   <CreditUsageChart data={store.dailyUsage} compact />
                 </TableCell>
-                <TableCell className="py-3 text-right text-sm text-muted">
-                  {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "—"}
+                <TableCell
+                  className="py-3 text-right text-sm text-muted"
+                  title={store.lastActivityAt ? formatDateTime(store.lastActivityAt) : undefined}
+                >
+                  {formatRelativeTime(store.lastActivityAt)}
                 </TableCell>
                 <TableCell className="py-3 pr-4">
                   <div className="flex items-center justify-end">
@@ -285,8 +288,11 @@ export function StoresOverviewTable({
 
             <div className="mt-3 flex items-center justify-between gap-3">
               <CreditUsageChart data={store.dailyUsage} compact />
-              <p className="text-xs text-muted">
-                {store.lastActivityAt ? formatDateTime(store.lastActivityAt) : "No activity yet"}
+              <p
+                className="text-xs text-muted"
+                title={store.lastActivityAt ? formatDateTime(store.lastActivityAt) : undefined}
+              >
+                {formatRelativeTime(store.lastActivityAt)}
               </p>
             </div>
           </div>
