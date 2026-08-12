@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
+import { CopyButton } from "@/components/shared/copy-button";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -94,7 +95,10 @@ export function LedgerTable({ rows }: { rows: Row[] }) {
                       </td>
                       <td className="px-4 py-3.5 text-muted">{formatDateTime(row.occurred_at)}</td>
                       <td className="px-4 py-3.5 font-mono text-xs text-muted truncate" title={row.ref_number}>
-                        {row.ref_number}
+                        <div className="flex items-center gap-1">
+                          <span className="truncate">{row.ref_number}</span>
+                          <CopyButton value={row.ref_number} />
+                        </div>
                       </td>
                       <td className="px-4 py-3.5">
                         <CategoryBadge category={row.category} />

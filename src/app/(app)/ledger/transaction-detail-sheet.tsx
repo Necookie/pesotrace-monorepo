@@ -15,6 +15,7 @@ import { StatusBadge } from "@/components/ledger/status-badge";
 import { formatDateTime } from "@/lib/format";
 import { confirmReview, getTransactionDetail } from "./actions";
 import type { Database } from "@/lib/database.types";
+import { CopyButton } from "@/components/shared/copy-button";
 
 type Row = Database["public"]["Tables"]["transactions"]["Row"];
 
@@ -87,7 +88,10 @@ export function TransactionDetailSheet() {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Reference</span>
-              <span className="font-mono text-ink">{displayRow.ref_number}</span>
+              <div className="flex items-center gap-1.5 font-mono text-ink">
+                <span>{displayRow.ref_number}</span>
+                <CopyButton value={displayRow.ref_number} />
+              </div>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted">Counterparty</span>
