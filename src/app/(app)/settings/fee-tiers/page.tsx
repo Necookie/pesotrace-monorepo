@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentStoreId } from "@/lib/queries/transactions";
 import { FeeTierTable } from "@/components/settings/fee-tier-table";
 import { FeeFormulaEditor } from "@/components/settings/fee-formula-editor";
+import { FeeCalculatorSimulator } from "@/components/settings/fee-calculator-simulator";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 
 export default async function FeeTiersPage() {
@@ -30,6 +31,7 @@ export default async function FeeTiersPage() {
       )}
       <FeeTierTable initial={config} />
       <FeeFormulaEditor initial={formula} />
+      <FeeCalculatorSimulator config={config} formula={formula} />
     </div>
   );
 }
