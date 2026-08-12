@@ -58,32 +58,58 @@ export function LedgerFilters() {
   const status = searchParams.get("status");
   const category = searchParams.get("category");
 
+  const activeFilterCount = [searchFromUrl, direction, status, category].filter(Boolean).length;
+
+  function clearAllFilters() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setSearch("");
+    startTransition(() => router.push("/ledger"));
+  }
+
   return (
     <div className="mb-5 flex flex-col gap-3">
-      <div className="relative w-full sm:max-w-xs">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-        <Input
-          placeholder="Search transactions..."
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return;
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-            updateParam("search", search || null);
-          }}
-          className="pl-8 pr-8"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            aria-label="Clear search"
-            className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-surface-strong hover:text-ink"
-          >
-            <X className="size-3.5" />
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+          <Input
+            placeholder="Search transactions..."
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              updateParam("search", search || null);
+            }}
+            className="pl-8 pr-8"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-surface-strong hover:text-ink"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+
+        {activeFilterCount > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="rounded-pill bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
+            </span>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-xs font-medium text-muted hover:text-ink hover:underline transition-colors"
+            >
+              Reset all
+            </button>
+          </div>
         )}
       </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 rounded-pill border border-hairline p-1">
           {["send", "receive"].map((d) => (
