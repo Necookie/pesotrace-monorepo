@@ -59,11 +59,11 @@ export async function listTransactions(
 // range over history without refetching. Serializing full rows into the RSC
 // payload meant shipping ~18 columns each — including notes, source_file_url
 // and tags — when ReportBuilder only reads these four.
-const REPORT_COLUMNS = "occurred_at, amount, direction, category" as const;
+const REPORT_COLUMNS = "occurred_at, amount, direction, category, fee_computed" as const;
 
 export type ReportRow = Pick<
   Database["public"]["Tables"]["transactions"]["Row"],
-  "occurred_at" | "amount" | "direction" | "category"
+  "occurred_at" | "amount" | "direction" | "category" | "fee_computed"
 >;
 
 export async function listTransactionsForReport(
