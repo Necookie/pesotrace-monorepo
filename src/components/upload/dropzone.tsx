@@ -1,11 +1,22 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const PRESETS = {
-  image: { mimeTypes: ["image/png", "image/jpeg"], accept: "image/png,image/jpeg", label: "PNG, JPG up to 10MB" },
-  pdf: { mimeTypes: ["application/pdf"], accept: "application/pdf", label: "PDF up to 15MB" },
+  image: {
+    mimeTypes: ["image/png", "image/jpeg", "image/webp"],
+    accept: "image/png,image/jpeg,image/webp",
+    maxSizeMb: 10,
+    label: "PNG, JPG, WebP up to 10MB",
+  },
+  pdf: {
+    mimeTypes: ["application/pdf"],
+    accept: "application/pdf",
+    maxSizeMb: 15,
+    label: "PDF up to 15MB",
+  },
 } as const;
 
 export function Dropzone({
@@ -23,11 +34,27 @@ export function Dropzone({
   const preset = PRESETS[kind];
 
   function handleFiles(fileList: FileList | null) {
-    if (!fileList) return;
-    const files = Array.from(fileList).filter((f) =>
-      (preset.mimeTypes as readonly string[]).includes(f.type)
-    );
-    if (files.length > 0) onFiles(multiple ? files : [files[0]]);
+    if (!fileList || fileList.length === 0) return;
+
+    const allFiles = Array.from(fileList);
+    const validFiles: File[] = [];
+    const maxSizeBytes = preset.maxSizeMb * 1024 * 1024;
+
+    for (const f of allFiles) {
+      if (!preset.mimeTypes.includes(f.type as any)) {
+        toast.error(`"${f.name}" is an unsupported format. Please upload ${kind === "pdf" ? "a PDF" : "a PNG or JPG"}.`);
+        continue;
+      }
+      if (f.size > maxSizeBytes) {
+        toast.error(`"${f.name}" exceeds the ${preset.maxSizeMb}MB file size limit.`);
+        continue;
+      }
+      validFiles.push(f);
+    }
+
+    if (validFiles.length > 0) {
+      onFiles(multiple ? validFiles : [validFiles[0]]);
+    }
   }
 
   const noun = kind === "pdf" ? "a statement" : multiple ? "screenshots" : "a screenshot";
