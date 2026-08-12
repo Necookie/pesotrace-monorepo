@@ -24,6 +24,29 @@ export function ReportBuilder({ rows }: { rows: ReportRow[] }) {
   const [grouping, setGrouping] = useState<GroupPeriod>("weekly");
   const [format, setFormat] = useState<"csv" | "pdf">("csv");
 
+  const setPreset = (preset: "today" | "7d" | "30d" | "month" | "ytd") => {
+    const today = isoDaysAgo(0);
+    const now = new Date();
+    if (preset === "today") {
+      setFrom(today);
+      setTo(today);
+    } else if (preset === "7d") {
+      setFrom(isoDaysAgo(7));
+      setTo(today);
+    } else if (preset === "30d") {
+      setFrom(isoDaysAgo(30));
+      setTo(today);
+    } else if (preset === "month") {
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      setFrom(monthStart);
+      setTo(today);
+    } else if (preset === "ytd") {
+      const yearStart = `${now.getFullYear()}-01-01`;
+      setFrom(yearStart);
+      setTo(today);
+    }
+  };
+
   const filtered = useMemo(
     () =>
       rows.filter((r) => {
@@ -32,6 +55,27 @@ export function ReportBuilder({ rows }: { rows: ReportRow[] }) {
       }),
     [rows, from, to]
   );
+
+  const summary = useMemo(() => {
+    let volume = 0;
+    let fees = 0;
+    let send = 0;
+    let receive = 0;
+    for (const r of filtered) {
+      const amt = Number(r.amount) || 0;
+      volume += amt;
+      fees += Number(r.fee_computed) || 0;
+      if (r.direction === "send") send += amt;
+      else receive += amt;
+    }
+    return {
+      count: filtered.length,
+      volume,
+      fees,
+      send,
+      receive,
+    };
+  }, [filtered]);
 
   const groups = useMemo(() => groupTransactions(filtered, grouping), [filtered, grouping]);
 
@@ -59,9 +103,54 @@ export function ReportBuilder({ rows }: { rows: ReportRow[] }) {
 
   return (
     <div className="space-y-6">
+      {/* Summary KPI Bar */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-2xl border border-hairline bg-canvas p-4">
+          <p className="text-xs text-muted">Filtered Volume</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-ink">{formatPeso(summary.volume)}</p>
+          <p className="mt-0.5 text-xs text-body">{summary.count} transactions</p>
+        </div>
+        <div className="rounded-2xl border border-hairline bg-canvas p-4">
+          <p className="text-xs text-muted">Fees Earned</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-primary">{formatPeso(summary.fees)}</p>
+          <p className="mt-0.5 text-xs text-body">Estimated revenue</p>
+        </div>
+        <div className="rounded-2xl border border-hairline bg-canvas p-4">
+          <p className="text-xs text-muted">Cash Out (Send)</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-down">{formatPeso(summary.send)}</p>
+        </div>
+        <div className="rounded-2xl border border-hairline bg-canvas p-4">
+          <p className="text-xs text-muted">Cash In (Receive)</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-up">{formatPeso(summary.receive)}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="space-y-4 rounded-2xl border border-hairline p-4 sm:p-6">
           <h2 className="text-sm font-semibold text-ink">Build a report</h2>
+
+          <div className="space-y-1.5">
+            <Label>Date presets</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { label: "Today", value: "today" },
+                { label: "7 Days", value: "7d" },
+                { label: "30 Days", value: "30d" },
+                { label: "This Month", value: "month" },
+                { label: "Year to Date", value: "ytd" },
+              ].map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setPreset(p.value as "today" | "7d" | "30d" | "month" | "ytd")}
+                  className="rounded-pill border border-hairline bg-surface-soft px-3 py-1 text-xs font-medium text-body hover:border-primary hover:text-ink transition-colors"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Start date</Label>
