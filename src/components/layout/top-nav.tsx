@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "./user-menu";
 import { LogoMark } from "@/components/brand/logo";
+import { CommandPalette } from "./command-palette";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -53,6 +54,7 @@ export function TopNav({
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
+        <CommandPalette />
         <span className="max-w-24 truncate rounded-pill bg-surface-strong px-3 py-1.5 text-xs font-medium text-ink sm:max-w-none">
           {storeName}
         </span>
