@@ -26,6 +26,7 @@ import { CostReportPanel } from "@/components/admin/cost-report-panel";
 import { StoreCreditBalanceSparkline } from "@/components/admin/store-credit-history-chart";
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
+import { CopyBadge } from "@/components/admin/copy-badge";
 import { Pagination } from "@/components/ui/pagination";
 import type { CreditEntryType } from "@/lib/database.types";
 
@@ -122,7 +123,10 @@ export default async function AdminStoreDetailPage({
             View as store
           </Link>
         </div>
-        <h1 className="mt-2 text-2xl font-medium text-ink">{detail.storeName}</h1>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-medium text-ink">{detail.storeName}</h1>
+          <CopyBadge text={detail.storeId} label="Store ID" />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
