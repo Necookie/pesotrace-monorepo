@@ -16,6 +16,7 @@ import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
 import { StoreSearch } from "@/components/admin/store-search";
 import { SortableHeader } from "@/components/admin/sortable-header";
 import { StoreStatusBadge } from "@/components/admin/store-status-badge";
+import { StoreHealthBadge } from "@/components/admin/admin-health-badge";
 import type { AdminStoreRow } from "@/lib/queries/admin";
 
 function exportStoresCsv(stores: AdminStoreRow[]) {
@@ -134,6 +135,7 @@ export function StoresOverviewTable({
               <TableHead className="py-3">
                 <SortableHeader label="Store" sortKey="name" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} />
               </TableHead>
+              <TableHead className="py-3">Health</TableHead>
               <TableHead className="py-3">Fee setup</TableHead>
               <TableHead className="py-3 text-right">
                 <SortableHeader label="Credit balance" sortKey="balance" activeSort={activeSort} activeDir={activeDir} searchParams={headerParams} align="right" />
@@ -175,6 +177,9 @@ export function StoresOverviewTable({
                   {store.balance <= 0 && <StoreStatusBadge status="out_of_credits" />}
                   {store.usageAnomaly && <StoreStatusBadge status="spike" />}
                 </TableCell>
+                <TableCell className="py-3">
+                  <StoreHealthBadge store={store} />
+                </TableCell>
                 <TableCell className="max-w-56 py-3">
                   <FeeConfigBadge summary={store.feeConfig} />
                 </TableCell>
@@ -214,7 +219,7 @@ export function StoresOverviewTable({
             ))}
             {visibleStores.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="py-10 text-center text-muted">
+                <TableCell colSpan={11} className="py-10 text-center text-muted">
                   {suspendedOnly ? "No suspended stores." : query ? `No stores match "${query}".` : "No stores yet."}
                 </TableCell>
               </TableRow>
@@ -252,6 +257,9 @@ export function StoresOverviewTable({
                   {store.suspended && <StoreStatusBadge status="suspended" />}
                   {store.balance <= 0 && <StoreStatusBadge status="out_of_credits" />}
                   {store.usageAnomaly && <StoreStatusBadge status="spike" />}
+                  <div className="mt-1">
+                    <StoreHealthBadge store={store} />
+                  </div>
                 </div>
               </div>
               <div className="flex shrink-0 items-center">
