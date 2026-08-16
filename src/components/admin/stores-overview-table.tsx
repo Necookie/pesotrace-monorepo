@@ -60,9 +60,20 @@ export function StoresOverviewTable({
   const headerParams = new URLSearchParams(headerParamsString);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [suspendedOnly, setSuspendedOnly] = useState(false);
+  const [filterTab, setFilterTab] = useState<"all" | "out_of_credits" | "low_credits" | "active" | "suspended">("all");
 
-  const visibleStores = suspendedOnly ? stores.filter((s) => s.suspended) : stores;
+  const outOfCreditsCount = stores.filter((s) => !s.suspended && s.balance <= 0).length;
+  const lowCreditsCount = stores.filter((s) => !s.suspended && s.balance > 0 && s.balance <= 10).length;
+  const activeCount = stores.filter((s) => !s.suspended && s.balance > 10).length;
+  const suspendedCount = stores.filter((s) => s.suspended).length;
+
+  const visibleStores = stores.filter((s) => {
+    if (filterTab === "suspended") return s.suspended;
+    if (filterTab === "out_of_credits") return !s.suspended && s.balance <= 0;
+    if (filterTab === "low_credits") return !s.suspended && s.balance > 0 && s.balance <= 10;
+    if (filterTab === "active") return !s.suspended && s.balance > 10;
+    return true;
+  });
 
   const allSelected = visibleStores.length > 0 && selected.size === visibleStores.length;
   const someSelected = selected.size > 0 && !allSelected;
@@ -81,35 +92,72 @@ export function StoresOverviewTable({
   }
 
   const selectedStores = visibleStores.filter((s) => selected.has(s.storeId));
-  const suspendedCount = stores.filter((s) => s.suspended).length;
 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-ink">
-          {suspendedOnly ? "Suspended stores" : "All stores"}{" "}
-          <span className="font-normal text-muted">({visibleStores.length})</span>
-        </h2>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => { setFilterTab("all"); setSelected(new Set()); }}
+            className={cn(
+              "rounded-pill px-3 py-1 text-xs font-medium transition-colors",
+              filterTab === "all"
+                ? "bg-surface-strong text-ink shadow-sm"
+                : "text-muted hover:text-ink"
+            )}
+          >
+            All <span className="text-muted">({stores.length})</span>
+          </button>
+          {outOfCreditsCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setFilterTab("out_of_credits"); setSelected(new Set()); }}
+              className={cn(
+                "rounded-pill px-3 py-1 text-xs font-medium transition-colors",
+                filterTab === "out_of_credits"
+                  ? "bg-rose-500/15 text-rose-700 font-semibold"
+                  : "text-rose-600 hover:bg-rose-500/10"
+              )}
+            >
+              Out of credits ({outOfCreditsCount})
+            </button>
+          )}
+          {lowCreditsCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setFilterTab("low_credits"); setSelected(new Set()); }}
+              className={cn(
+                "rounded-pill px-3 py-1 text-xs font-medium transition-colors",
+                filterTab === "low_credits"
+                  ? "bg-amber-500/15 text-amber-700 font-semibold"
+                  : "text-amber-600 hover:bg-amber-500/10"
+              )}
+            >
+              Low credits ({lowCreditsCount})
+            </button>
+          )}
+          {suspendedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setFilterTab("suspended"); setSelected(new Set()); }}
+              className={cn(
+                "rounded-pill px-3 py-1 text-xs font-medium transition-colors",
+                filterTab === "suspended"
+                  ? "bg-down/15 text-down font-semibold"
+                  : "text-muted hover:text-ink"
+              )}
+            >
+              Suspended ({suspendedCount})
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {selected.size > 0 && (
             <Button type="button" size="sm" variant="outline" onClick={() => setBulkOpen(true)}>
               <Wallet className="mr-1.5 size-3.5" />
               Grant credits to {selected.size}
             </Button>
-          )}
-          {suspendedCount > 0 && (
-            <button
-              type="button"
-              onClick={() => { setSuspendedOnly(!suspendedOnly); setSelected(new Set()); }}
-              className={cn(
-                "rounded-pill border px-3 py-1.5 text-xs font-medium transition-colors",
-                suspendedOnly
-                  ? "border-down/50 bg-down/10 text-down"
-                  : "border-hairline text-muted hover:border-ink/30 hover:text-ink"
-              )}
-            >
-              {suspendedOnly ? "Show all" : `Suspended (${suspendedCount})`}
-            </button>
           )}
           <button
             type="button"
@@ -220,7 +268,7 @@ export function StoresOverviewTable({
             {visibleStores.length === 0 && (
               <TableRow>
                 <TableCell colSpan={11} className="py-10 text-center text-muted">
-                  {suspendedOnly ? "No suspended stores." : query ? `No stores match "${query}".` : "No stores yet."}
+                  {filterTab !== "all" ? `No stores match the ${filterTab.replace(/_/g, " ")} filter.` : query ? `No stores match "${query}".` : "No stores yet."}
                 </TableCell>
               </TableRow>
             )}
@@ -230,7 +278,7 @@ export function StoresOverviewTable({
 
       {/* Mobile: stacked cards */}
       <div className="flex flex-col gap-3 md:hidden">
-        {stores.map((store) => (
+        {visibleStores.map((store) => (
           <div
             key={store.storeId}
             className={cn(
