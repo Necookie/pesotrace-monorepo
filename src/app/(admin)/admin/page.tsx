@@ -13,6 +13,7 @@ import { ExtractionFailuresPanel } from "@/components/admin/extraction-failures-
 import { formatExtractionCost } from "@/lib/format";
 import { TrialRequestsPanel } from "@/components/admin/trial-requests-panel";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
+import { AdminQuickSummary } from "@/components/admin/admin-quick-summary";
 import { StoresOverviewTable } from "@/components/admin/stores-overview-table";
 
 type SortKey = "name" | "balance" | "today" | "extractions" | "cost" | "activity";
@@ -134,13 +135,19 @@ export default async function AdminOverviewPage({
         <TrialRequestsPanel requests={pendingRequests} />
       </div>
 
-      <StoresOverviewTable
-        stores={stores}
-        query={query}
-        activeSort={activeSort}
-        activeDir={activeDir}
-        headerParamsString={headerParams.toString()}
-      />
+      <div className="mt-6">
+        <AdminQuickSummary stores={allStores} />
+      </div>
+
+      <div className="mt-6">
+        <StoresOverviewTable
+          stores={stores}
+          query={query}
+          activeSort={activeSort}
+          activeDir={activeDir}
+          headerParamsString={headerParams.toString()}
+        />
+      </div>
     </div>
   );
 }
