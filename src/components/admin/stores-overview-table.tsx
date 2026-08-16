@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatExtractionCost, formatDateTime, formatRelativeTime } from "@/lib/format";
 import { CreditUsageChart } from "@/components/charts/lazy";
 import { StoreRowDeleteButton } from "@/components/admin/store-row-delete-button";
+import { StoreQuickActionsMenu } from "@/components/admin/store-quick-actions-menu";
 import { QuickAdjustCreditsDialog } from "@/components/admin/quick-adjust-credits-dialog";
 import { BulkGrantCreditsDialog } from "@/components/admin/bulk-grant-credits-dialog";
 import { FeeConfigBadge } from "@/components/admin/fee-config-badge";
@@ -258,8 +259,9 @@ export function StoresOverviewTable({
                   {formatRelativeTime(store.lastActivityAt)}
                 </TableCell>
                 <TableCell className="py-3 pr-4">
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-end gap-1">
                     <QuickAdjustCreditsDialog storeId={store.storeId} storeName={store.storeName} />
+                    <StoreQuickActionsMenu storeId={store.storeId} storeName={store.storeName} />
                     <StoreRowDeleteButton storeId={store.storeId} storeName={store.storeName} />
                   </div>
                 </TableCell>
