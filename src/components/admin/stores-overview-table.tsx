@@ -18,32 +18,8 @@ import { StoreSearch } from "@/components/admin/store-search";
 import { SortableHeader } from "@/components/admin/sortable-header";
 import { StoreStatusBadge } from "@/components/admin/store-status-badge";
 import { StoreHealthBadge } from "@/components/admin/admin-health-badge";
+import { downloadStoresCsv } from "@/lib/admin-export";
 import type { AdminStoreRow } from "@/lib/queries/admin";
-
-function exportStoresCsv(stores: AdminStoreRow[]) {
-  const headers = ["Store", "Status", "Credit balance", "Requests today", "Extractions (30d)", "Real cost (30d)", "Last activity"];
-  const rows = stores.map((s) => [
-    s.storeName,
-    s.suspended ? "Suspended" : s.balance <= 0 ? "Out of credits" : "Active",
-    String(s.balance),
-    String(s.requestsToday),
-    String(s.extractionsThisMonth),
-    formatExtractionCost(s.costUsdThisMonth),
-    s.lastActivityAt ? formatDateTime(s.lastActivityAt) : "",
-  ]);
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `stores-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 export function StoresOverviewTable({
   stores,
@@ -162,7 +138,7 @@ export function StoresOverviewTable({
           )}
           <button
             type="button"
-            onClick={() => exportStoresCsv(visibleStores)}
+            onClick={() => downloadStoresCsv(visibleStores)}
             title="Export filtered list as CSV"
             aria-label="Export stores as CSV"
             className="flex size-8 items-center justify-center rounded-pill border border-hairline text-muted hover:bg-surface-strong hover:text-ink"
