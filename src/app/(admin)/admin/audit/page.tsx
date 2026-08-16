@@ -6,39 +6,8 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
+import { formatAdminAction } from "@/lib/admin-audit-format";
 import type { AdminActionType } from "@/lib/database.types";
-
-const ACTION_LABEL: Record<AdminActionType, string> = {
-  adjust_credit: "Adjusted credits",
-  approve_request: "Approved request",
-  deny_request: "Denied request",
-  update_store_name: "Renamed store",
-  delete_store: "Deleted store",
-  grant_admin: "Granted admin",
-  revoke_admin: "Revoked admin",
-  update_fee_tiers: "Updated fee setup",
-  suspend_store: "Suspended store",
-  unsuspend_store: "Unsuspended store",
-  update_admin_notes: "Updated admin notes",
-  bulk_grant_credits: "Bulk-granted credits",
-  update_platform_settings: "Updated platform settings",
-};
-
-const ACTION_TEXT_COLOR: Record<AdminActionType, string> = {
-  adjust_credit: "text-primary",
-  approve_request: "text-up",
-  deny_request: "text-muted",
-  update_store_name: "text-ink",
-  delete_store: "text-down",
-  grant_admin: "text-up",
-  revoke_admin: "text-down",
-  update_fee_tiers: "text-ink",
-  suspend_store: "text-down",
-  unsuspend_store: "text-up",
-  update_admin_notes: "text-ink",
-  bulk_grant_credits: "text-up",
-  update_platform_settings: "text-ink",
-};
 
 export default async function AdminAuditLogPage() {
   const supabase = createAdminClient();
@@ -66,34 +35,37 @@ export default async function AdminAuditLogPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => (
-              <TableRow key={entry.id}>
-                <TableCell className="py-3 pl-4">
-                  <span
-                    className={cn(
-                      "inline-block rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
-                      ACTION_TEXT_COLOR[entry.action]
+            {entries.map((entry) => {
+              const formatted = formatAdminAction(entry.action);
+              return (
+                <TableRow key={entry.id}>
+                  <TableCell className="py-3 pl-4">
+                    <span
+                      className={cn(
+                        "inline-block rounded-pill border px-2.5 py-0.5 text-xs font-medium",
+                        formatted.badgeClass
+                      )}
+                    >
+                      {formatted.label}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm text-body">
+                    {entry.storeId ? (
+                      <Link href={`/admin/stores/${entry.storeId}`} className="text-ink hover:text-primary">
+                        {entry.storeName}
+                      </Link>
+                    ) : (
+                      (entry.storeName ?? "—")
                     )}
-                  >
-                    {ACTION_LABEL[entry.action]}
-                  </span>
-                </TableCell>
-                <TableCell className="text-sm text-body">
-                  {entry.storeId ? (
-                    <Link href={`/admin/stores/${entry.storeId}`} className="text-ink hover:text-primary">
-                      {entry.storeName}
-                    </Link>
-                  ) : (
-                    (entry.storeName ?? "—")
-                  )}
-                </TableCell>
-                <TableCell className="max-w-sm truncate text-sm text-body">{entry.targetSummary ?? "—"}</TableCell>
-                <TableCell className="text-sm text-muted">{entry.actorUserId}</TableCell>
-                <TableCell className="py-3 pr-4 text-right text-sm text-muted">
-                  {formatDateTime(entry.createdAt)}
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="max-w-sm truncate text-sm text-body">{entry.targetSummary ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted">{entry.actorUserId}</TableCell>
+                  <TableCell className="py-3 pr-4 text-right text-sm text-muted">
+                    {formatDateTime(entry.createdAt)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {entries.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="py-10 text-center text-muted">
@@ -107,19 +79,21 @@ export default async function AdminAuditLogPage() {
 
       {/* Mobile: stacked cards */}
       <div className="mt-6 flex flex-col gap-3 md:hidden">
-        {entries.map((entry) => (
-          <div key={entry.id} className="rounded-2xl border border-hairline p-4">
-            <div className="flex items-start justify-between gap-2">
-              <span
-                className={cn(
-                  "inline-block rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
-                  ACTION_TEXT_COLOR[entry.action]
-                )}
-              >
-                {ACTION_LABEL[entry.action]}
-              </span>
-              <span className="shrink-0 text-xs text-muted">{formatDateTime(entry.createdAt)}</span>
-            </div>
+        {entries.map((entry) => {
+          const formatted = formatAdminAction(entry.action);
+          return (
+            <div key={entry.id} className="rounded-2xl border border-hairline p-4">
+              <div className="flex items-start justify-between gap-2">
+                <span
+                  className={cn(
+                    "inline-block rounded-pill border px-2.5 py-0.5 text-xs font-medium",
+                    formatted.badgeClass
+                  )}
+                >
+                  {formatted.label}
+                </span>
+                <span className="shrink-0 text-xs text-muted">{formatDateTime(entry.createdAt)}</span>
+              </div>
             <p className="mt-2 text-sm text-ink">
               {entry.storeId ? (
                 <Link href={`/admin/stores/${entry.storeId}`} className="hover:text-primary">
