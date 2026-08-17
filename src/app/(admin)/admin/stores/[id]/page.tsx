@@ -20,6 +20,7 @@ import { StoreSuspendCard } from "@/components/admin/store-suspend-card";
 import { StoreAdminNotesCard } from "@/components/admin/store-admin-notes-card";
 import { StoreFeeConfigCard } from "@/components/admin/store-fee-config-card";
 import { StoreFeeSummary } from "@/components/admin/store-fee-summary";
+import { StoreFeeMatrix } from "@/components/admin/store-fee-matrix";
 import { StoreFeeHistory } from "@/components/admin/store-fee-history";
 import { StoreReceiptVerification } from "@/components/admin/store-receipt-verification";
 import { CostReportPanel } from "@/components/admin/cost-report-panel";
@@ -177,6 +178,8 @@ export default async function AdminStoreDetailPage({
           formula: store?.fee_formula,
         }}
       />
+
+      <StoreFeeMatrix customConfig={store?.fee_tier_config ?? null} />
 
       <StoreFeeConfigCard
         storeId={detail.storeId}
