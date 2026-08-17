@@ -9,6 +9,7 @@ import { CategoryBadge } from "@/components/ledger/category-badge";
 import { formatDateTime } from "@/lib/format";
 import { TransactionSearchBox } from "@/components/admin/transaction-search-box";
 import { AdminSearchCsvExport } from "@/components/admin/admin-search-csv-export";
+import { HighlightedText } from "@/components/admin/highlighted-text";
 
 export default async function AdminTransactionSearchPage({
   searchParams,
@@ -78,13 +79,21 @@ export default async function AdminTransactionSearchPage({
                     <TableRow key={transaction.id}>
                       <TableCell className="py-3 pl-4">
                         <Link href={`/admin/stores/${storeId}`} className="text-ink hover:text-primary">
-                          {storeName}
+                          <HighlightedText text={storeName} query={query} />
                         </Link>
                       </TableCell>
                       <TableCell className="py-3 text-sm text-body">
-                        {transaction.counterparty_name || transaction.counterparty_number || "—"}
+                        {transaction.counterparty_name ? (
+                          <HighlightedText text={transaction.counterparty_name} query={query} />
+                        ) : transaction.counterparty_number ? (
+                          <HighlightedText text={transaction.counterparty_number} query={query} />
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
-                      <TableCell className="py-3 font-mono text-xs text-muted">{transaction.ref_number}</TableCell>
+                      <TableCell className="py-3 font-mono text-xs text-muted">
+                        <HighlightedText text={transaction.ref_number} query={query} />
+                      </TableCell>
                       <TableCell className="py-3">
                         <CategoryBadge category={transaction.category} />
                       </TableCell>
