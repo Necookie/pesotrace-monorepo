@@ -27,6 +27,7 @@ import { StoreCreditBalanceSparkline } from "@/components/admin/store-credit-his
 import { DEFAULT_FEE_TIER_CONFIG } from "@/lib/schemas/fee-tier";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
 import { CopyBadge } from "@/components/admin/copy-badge";
+import { StoreTierBadge } from "@/components/admin/store-tier-badge";
 import { Pagination } from "@/components/ui/pagination";
 import type { CreditEntryType } from "@/lib/database.types";
 
@@ -126,6 +127,7 @@ export default async function AdminStoreDetailPage({
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-medium text-ink">{detail.storeName}</h1>
           <CopyBadge text={detail.storeId} label="Store ID" />
+          <StoreTierBadge extractionsThisMonth={costReport.currentMonthExtractions} />
         </div>
       </div>
 
