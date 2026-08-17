@@ -66,22 +66,51 @@ export function ExtractionFailuresPanel({ failures }: { failures: StoreExtractio
           </p>
 
           <div className="mt-3 space-y-2">
-            {failures.slice(0, 5).map((f) => (
-              <Link
-                key={f.storeId}
-                href={`/admin/stores/${f.storeId}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-hairline bg-canvas px-3 py-2 text-sm hover:border-down/40"
-              >
-                <span className="truncate text-ink">{f.storeName}</span>
-                <span className="shrink-0 font-mono text-xs text-muted">
-                  {f.failureCount} fail{f.failureCount === 1 ? "" : "s"}{" "}
-                  {f.failureRatePct > 0 && (
-                    <span className="text-down">({f.failureRatePct.toFixed(1)}%)</span>
-                  )}{" "}
-                  · {formatExtractionCost(f.wastedCostUsd)}
-                </span>
-              </Link>
-            ))}
+            {failures.slice(0, 5).map((f) => {
+              const isHigh = f.failureRatePct >= 15;
+              const isElevated = f.failureRatePct >= 5 && f.failureRatePct < 15;
+              return (
+                <div
+                  key={f.storeId}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-hairline bg-canvas px-3 py-2 text-sm hover:border-down/40"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Link
+                      href={`/admin/stores/${f.storeId}`}
+                      className="truncate font-medium text-ink hover:text-primary"
+                    >
+                      {f.storeName}
+                    </Link>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        isHigh
+                          ? "bg-rose-500/15 text-rose-700"
+                          : isElevated
+                          ? "bg-amber-500/15 text-amber-700"
+                          : "bg-slate-500/10 text-slate-600"
+                      }`}
+                    >
+                      {isHigh ? "High" : isElevated ? "Elevated" : "Low"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono text-xs text-muted">
+                      {f.failureCount} fail{f.failureCount === 1 ? "" : "s"}{" "}
+                      {f.failureRatePct > 0 && (
+                        <span className="text-down font-medium">({f.failureRatePct.toFixed(1)}%)</span>
+                      )}{" "}
+                      · {formatExtractionCost(f.wastedCostUsd)}
+                    </span>
+                    <Link
+                      href={`/admin/search?q=${encodeURIComponent(f.storeName)}`}
+                      className="text-xs text-muted hover:text-ink underline"
+                    >
+                      Search
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
