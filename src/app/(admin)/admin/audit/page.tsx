@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
+import { AdminAuditCsvExport } from "@/components/admin/admin-audit-csv-export";
 import { formatAdminAction } from "@/lib/admin-audit-format";
 import type { AdminActionType } from "@/lib/database.types";
 
@@ -15,8 +16,13 @@ export default async function AdminAuditLogPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-medium text-ink">Audit log</h1>
-      <p className="mt-1 text-sm text-body">Every platform-admin action, most recent first.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-medium text-ink">Audit log</h1>
+          <p className="mt-1 text-sm text-body">Every platform-admin action, most recent first.</p>
+        </div>
+        <AdminAuditCsvExport entries={entries} />
+      </div>
 
       <div className="mt-6 max-w-xs">
         <AdminKpiTile label="Logged actions" value={String(entries.length)} icon={ScrollText} accent="primary" />
