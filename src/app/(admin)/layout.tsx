@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requirePlatformAdmin } from "@/lib/auth/platform-admin";
 import { LogoMark } from "@/components/brand/logo";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminSystemHealth } from "@/components/admin/admin-system-health";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -22,12 +23,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           Platform operator
         </span>
         <AdminNav />
-        <Link
-          href="/dashboard"
-          className="ml-auto shrink-0 text-sm font-medium text-body hover:text-ink"
-        >
-          Back to app
-        </Link>
+        <div className="ml-auto flex items-center gap-3">
+          <AdminSystemHealth />
+          <Link
+            href="/dashboard"
+            className="shrink-0 text-sm font-medium text-body hover:text-ink"
+          >
+            Back to app
+          </Link>
+        </div>
       </header>
       <main className="flex-1">
         <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">{children}</div>
