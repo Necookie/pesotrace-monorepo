@@ -114,7 +114,36 @@ This document outlines 15+ high-priority update recommendations and architectura
 
 ---
 
+---
+
 ## 16. Cost Anomaly Alert Badging
 - **Context**: Sudden spikes in Gemini extraction costs can go unnoticed until month-end.
 - **Recommendation**: Add automated anomaly badges on monthly cost reports when monthly extraction costs increase by >30% over the trailing baseline.
 - **Impact**: Proactive margin protection for platform operators.
+
+---
+
+# Implementation Status Matrix
+
+| # | Update Recommendation | Implementation File(s) | Tests / Verification | Status |
+|---|------------------------|-------------------------|----------------------|--------|
+| 1 | Store Health Score & Triage | `src/lib/admin-health.ts`, `src/components/admin/admin-health-badge.tsx` | `src/lib/admin-health.test.ts` (7 tests) | ✅ Implemented |
+| 2 | Balance & Status Quick Filters | `src/components/admin/stores-overview-table.tsx` | Interactive UI verified | ✅ Implemented |
+| 3 | Inline Row Actions Menu | `src/components/admin/store-quick-actions-menu.tsx` | Interactive dropdown verified | ✅ Implemented |
+| 4 | Search Query Highlighting | `src/lib/highlight.ts`, `src/components/admin/highlighted-text.tsx` | `src/lib/highlight.test.ts` (5 tests) | ✅ Implemented |
+| 5 | Search Hints & Suggestions | `src/components/admin/transaction-search-box.tsx` | Fast query presets verified | ✅ Implemented |
+| 6 | System Telemetry Status Pill | `src/components/admin/admin-system-health.tsx` | Layout header integration | ✅ Implemented |
+| 7 | Extraction Severity Badges | `src/components/admin/extraction-failures-panel.tsx` | Severity thresholds mapped | ✅ Implemented |
+| 8 | Store Usage Volume Tiers | `src/components/admin/store-tier-badge.tsx` | Dynamic thresholds mapped | ✅ Implemented |
+| 9 | Bulk Grant Impact Preview | `src/components/admin/bulk-grant-credits-dialog.tsx` | Formula preview & presets | ✅ Implemented |
+| 10 | Audit Log Action Badges & CSV | `src/lib/admin-audit-format.ts`, `src/components/admin/admin-audit-csv-export.tsx` | `src/lib/admin-audit-format.test.ts` (4 tests) | ✅ Implemented |
+| 11 | Broadcast Live Preview & Priority | `src/components/admin/broadcast-composer.tsx` | Live markdown & styling preview | ✅ Implemented |
+| 12 | Suspension Reason Presets | `src/components/admin/store-suspend-card.tsx` | 4 standardized presets | ✅ Implemented |
+| 13 | Metadata One-Click Copy Badges | `src/components/admin/copy-badge.tsx` | Clipboard API + animated feedback | ✅ Implemented |
+| 14 | Fee Tier Matrix Card | `src/components/admin/store-fee-matrix.tsx` | Platform default vs custom tier comparison | ✅ Implemented |
+| 15 | Rich Empty State Indicators | `src/components/admin/admin-empty-state.tsx` | Search & audit empty view polish | ✅ Implemented |
+| 16 | Cost Surge Anomaly Indicator | `src/components/admin/cost-report-panel.tsx` | +30% threshold alert | ✅ Implemented |
+| 17 | Modular Stores CSV Generator | `src/lib/admin-export.ts` | `src/lib/admin-export.test.ts` (3 tests) | ✅ Implemented |
+| 18 | KPI Loading Skeleton Grid | `src/components/admin/admin-kpi-tile-skeleton.tsx` | Zero CLS loading transitions | ✅ Implemented |
+| 19 | Admin Nav Counter Badges | `src/components/admin/admin-nav.tsx` | Dynamic badge prop support | ✅ Implemented |
+| 20 | Platform Health & Stats Card | `src/components/admin/admin-quick-summary.tsx` | Store health distribution widget | ✅ Implemented |
