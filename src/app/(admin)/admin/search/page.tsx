@@ -10,6 +10,7 @@ import { formatDateTime } from "@/lib/format";
 import { TransactionSearchBox } from "@/components/admin/transaction-search-box";
 import { AdminSearchCsvExport } from "@/components/admin/admin-search-csv-export";
 import { HighlightedText } from "@/components/admin/highlighted-text";
+import { AdminEmptyState } from "@/components/admin/admin-empty-state";
 
 export default async function AdminTransactionSearchPage({
   searchParams,
@@ -37,16 +38,19 @@ export default async function AdminTransactionSearchPage({
 
       <div className="mt-6">
         {!query && (
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-hairline py-16 text-center">
-            <SearchIcon className="size-5 text-muted" />
-            <p className="text-sm text-muted">Start typing to search across every store&apos;s transactions.</p>
-          </div>
+          <AdminEmptyState
+            icon={SearchIcon}
+            title="Cross-Store Transaction Search"
+            description="Start typing a GCash reference number, customer name, or phone number to search across all merchant stores."
+          />
         )}
 
         {query && results.length === 0 && (
-          <div className="rounded-2xl border border-hairline py-16 text-center text-muted">
-            No transactions match &ldquo;{query}&rdquo;.
-          </div>
+          <AdminEmptyState
+            icon={SearchIcon}
+            title="No matching transactions"
+            description={`No transactions matched "${query}". Check for typos or try searching with only the numeric portion of the reference number.`}
+          />
         )}
 
         {query && results.length > 0 && (
