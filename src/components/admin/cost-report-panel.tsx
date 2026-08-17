@@ -44,9 +44,18 @@ function StatCard({
   comparisonLabel: string;
   pct: number | null;
 }) {
+  const isSurge = pct !== null && pct >= 30;
+
   return (
-    <div className="rounded-2xl border border-hairline bg-canvas p-4">
-      <p className="text-xs text-muted">{label}</p>
+    <div className={cn("rounded-2xl border border-hairline bg-canvas p-4", isSurge && "border-amber-500/30 bg-amber-500/5")}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted">{label}</p>
+        {isSurge && (
+          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+            Surge +{pct?.toFixed(0)}%
+          </span>
+        )}
+      </div>
       <p className="mt-1.5 font-mono text-lg font-semibold text-ink">{formatExtractionCost(current.costUsd)}</p>
       <p className="mt-1 font-mono text-xs text-muted">
         {current.requests.toLocaleString()} request{current.requests === 1 ? "" : "s"}
