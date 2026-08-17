@@ -139,8 +139,25 @@ export function StoreSuspendCard({
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="mt-4 space-y-1.5">
+                <div className="mt-4 space-y-2">
                   <Label className="text-xs text-muted">Reason (required, kept in the audit log)</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "Non-payment / Inactive",
+                      "Terms of service violation",
+                      "Suspicious extraction activity",
+                      "Requested by store owner",
+                    ].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setReason(preset)}
+                        className="rounded-pill border border-hairline px-2 py-0.5 text-[11px] text-muted hover:border-ink/20 hover:text-ink transition-colors"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
                   <Textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
