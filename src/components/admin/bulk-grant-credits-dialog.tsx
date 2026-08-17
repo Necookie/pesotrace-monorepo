@@ -90,7 +90,21 @@ export function BulkGrantCreditsDialog({
 
           <div className="mt-4 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted">Amount</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted">Amount per store</Label>
+                <div className="flex gap-1">
+                  {[25, 50, 100, 250].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setDelta(String(val))}
+                      className="rounded px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted hover:bg-surface-strong hover:text-ink"
+                    >
+                      +{val}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <Input
                 type="number"
                 step="1"
@@ -100,6 +114,16 @@ export function BulkGrantCreditsDialog({
                 className="font-mono"
                 autoFocus
               />
+              {Number(delta) !== 0 && !isNaN(Number(delta)) && (
+                <p className="text-[11px] text-muted">
+                  Total platform impact:{" "}
+                  <strong className="font-mono text-ink">
+                    {Number(delta) > 0 ? "+" : ""}
+                    {(Number(delta) * storeIds.length).toLocaleString()} credits
+                  </strong>{" "}
+                  across {storeIds.length} stores
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted">Note</Label>
