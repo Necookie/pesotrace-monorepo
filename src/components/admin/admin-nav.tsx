@@ -5,7 +5,15 @@ import { usePathname } from "next/navigation";
 import { Store, Search, ScrollText, ShieldCheck, Settings, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+export interface NavItemConfig {
+  href: string;
+  label: string;
+  icon: typeof Store;
+  exact?: boolean;
+  badge?: number | string;
+}
+
+const NAV_ITEMS: NavItemConfig[] = [
   { href: "/admin", label: "Stores", icon: Store, exact: true },
   { href: "/admin/search", label: "Search", icon: Search },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
@@ -14,7 +22,7 @@ const NAV_ITEMS = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AdminNav() {
+export function AdminNav({ badges }: { badges?: Record<string, number | string> }) {
   const pathname = usePathname();
 
   return (
@@ -22,6 +30,8 @@ export function AdminNav() {
       {NAV_ITEMS.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         const Icon = item.icon;
+        const badgeValue = badges?.[item.href] ?? item.badge;
+
         return (
           <Link
             key={item.href}
@@ -33,6 +43,11 @@ export function AdminNav() {
           >
             <Icon className="size-4" />
             <span className="hidden sm:inline">{item.label}</span>
+            {badgeValue !== undefined && (
+              <span className="ml-0.5 rounded-full bg-primary/20 px-1.5 py-0.2 text-[10px] font-semibold text-primary">
+                {badgeValue}
+              </span>
+            )}
           </Link>
         );
       })}
