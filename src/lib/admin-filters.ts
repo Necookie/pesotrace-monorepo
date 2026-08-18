@@ -7,6 +7,7 @@ import type {
   TransactionStatus,
   TransactionSource,
 } from "@/lib/database.types";
+import { storeToday } from "@/lib/time";
 
 export type DateRangePreset = "today" | "7d" | "30d" | "90d" | "all" | "custom";
 
@@ -35,11 +36,11 @@ export function resolveAdminDateRange(
   }
 
   if (normalizedPreset === "today") {
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(now);
-    end.setHours(23, 59, 59, 999);
-    return { preset: "today", startIso: start.toISOString(), endIso: end.toISOString(), label: "Today" };
+    const todayKey = storeToday(now);
+    // Manila start of day is todayKey 00:00:00 +08:00
+    const startIso = new Date(`${todayKey}T00:00:00+08:00`).toISOString();
+    const endIso = new Date(`${todayKey}T23:59:59.999+08:00`).toISOString();
+    return { preset: "today", startIso, endIso, label: "Today" };
   }
 
   if (normalizedPreset === "7d") {
@@ -62,18 +63,20 @@ export function resolveAdminDateRange(
   let endIso: string | null = null;
 
   if (customStart) {
-    const parsedStart = new Date(customStart);
-    if (!isNaN(parsedStart.getTime())) {
-      parsedStart.setHours(0, 0, 0, 0);
-      startIso = parsedStart.toISOString();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(customStart)) {
+      startIso = new Date(`${customStart}T00:00:00+08:00`).toISOString();
+    } else {
+      const parsed = new Date(customStart);
+      if (!isNaN(parsed.getTime())) startIso = parsed.toISOString();
     }
   }
 
   if (customEnd) {
-    const parsedEnd = new Date(customEnd);
-    if (!isNaN(parsedEnd.getTime())) {
-      parsedEnd.setHours(23, 59, 59, 999);
-      endIso = parsedEnd.toISOString();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(customEnd)) {
+      endIso = new Date(`${customEnd}T23:59:59.999+08:00`).toISOString();
+    } else {
+      const parsed = new Date(customEnd);
+      if (!isNaN(parsed.getTime())) endIso = parsed.toISOString();
     }
   }
 
