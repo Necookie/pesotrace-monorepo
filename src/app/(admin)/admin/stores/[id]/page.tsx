@@ -144,7 +144,7 @@ export default async function AdminStoreDetailPage({
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-medium text-ink">{detail.storeName}</h1>
           <CopyBadge text={detail.storeId} label="Store ID" />
-          <StoreTierBadge extractionsThisMonth={costReport.currentMonthExtractions} />
+          <StoreTierBadge extractionsThisMonth={costReport.thisMonth.requests} />
         </div>
       </div>
 

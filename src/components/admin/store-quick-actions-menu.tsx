@@ -29,25 +29,21 @@ export function StoreQuickActionsMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="size-8 p-0 text-muted hover:text-ink"
-          aria-label={`Open menu for ${storeName}`}
-        >
-          <MoreHorizontal className="size-4" />
-        </Button>
+      <DropdownMenuTrigger
+        className="flex size-8 items-center justify-center rounded-lg p-0 text-muted hover:bg-surface-strong hover:text-ink transition-colors"
+        aria-label={`Open menu for ${storeName}`}
+      >
+        <MoreHorizontal className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem asChild>
-          <Link href={`/admin/stores/${storeId}`} className="cursor-pointer">
+        <DropdownMenuItem>
+          <Link href={`/admin/stores/${storeId}`} className="flex items-center w-full cursor-pointer">
             <ExternalLink className="mr-2 size-3.5" />
             <span>Store details</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`/admin/search?q=${encodeURIComponent(storeName)}`} className="cursor-pointer">
+        <DropdownMenuItem>
+          <Link href={`/admin/search?q=${encodeURIComponent(storeName)}`} className="flex items-center w-full cursor-pointer">
             <Search className="mr-2 size-3.5" />
             <span>Search transactions</span>
           </Link>

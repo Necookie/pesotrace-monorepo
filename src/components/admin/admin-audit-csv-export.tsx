@@ -4,9 +4,9 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { formatAdminAction } from "@/lib/admin-audit-format";
-import type { AdminLogEntry } from "@/lib/queries/admin";
+import type { AdminAuditLogEntry } from "@/lib/queries/admin";
 
-export function AdminAuditCsvExport({ entries }: { entries: AdminLogEntry[] }) {
+export function AdminAuditCsvExport({ entries }: { entries: AdminAuditLogEntry[] }) {
   function handleExport() {
     const headers = ["Action", "Category", "Store Name", "Store ID", "Detail", "Actor User ID", "Created At"];
     const rows = entries.map((e) => {

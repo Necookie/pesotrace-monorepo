@@ -8,7 +8,7 @@ import {
   ArrowDownLeft,
 } from "lucide-react";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
-import { formatCurrency } from "@/lib/format";
+import { formatPeso } from "@/lib/format";
 import type { AdminTransactionStats } from "@/lib/queries/admin-types";
 
 export function AdminTransactionKpis({ stats }: { stats: AdminTransactionStats }) {
@@ -16,7 +16,7 @@ export function AdminTransactionKpis({ stats }: { stats: AdminTransactionStats }
     <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
       <AdminKpiTile
         label="Total volume"
-        value={formatCurrency(stats.totalVolume)}
+        value={formatPeso(stats.totalVolume)}
         icon={TrendingUp}
         accent="primary"
         subtitle={`${stats.totalCount.toLocaleString()} total transactions`}
@@ -26,11 +26,11 @@ export function AdminTransactionKpis({ stats }: { stats: AdminTransactionStats }
         value={stats.totalCount.toLocaleString()}
         icon={Receipt}
         accent="primary"
-        subtitle={`Avg ${formatCurrency(stats.avgAmount)}`}
+        subtitle={`Avg ${formatPeso(stats.avgAmount)}`}
       />
       <AdminKpiTile
         label="Fees computed"
-        value={formatCurrency(stats.totalFees)}
+        value={formatPeso(stats.totalFees)}
         icon={Coins}
         accent="up"
         subtitle={`${((stats.totalFees / (stats.totalVolume || 1)) * 100).toFixed(2)}% margin`}
@@ -44,14 +44,14 @@ export function AdminTransactionKpis({ stats }: { stats: AdminTransactionStats }
       />
       <AdminKpiTile
         label="Cash in / Received"
-        value={formatCurrency(stats.byDirection.receiveVolume)}
+        value={formatPeso(stats.byDirection.receiveVolume)}
         icon={ArrowDownLeft}
         accent="primary"
         subtitle={`${stats.byDirection.receiveCount} transfers`}
       />
       <AdminKpiTile
         label="Cash out / Sent"
-        value={formatCurrency(stats.byDirection.sendVolume)}
+        value={formatPeso(stats.byDirection.sendVolume)}
         icon={ArrowUpRight}
         accent="muted"
         subtitle={`${stats.byDirection.sendCount} transfers`}

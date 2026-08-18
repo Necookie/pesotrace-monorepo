@@ -7,8 +7,8 @@ export function StoreFeeMatrix({
 }: {
   customConfig: FeeTierConfig | null;
 }) {
-  const activeTiers = customConfig?.tiers ?? DEFAULT_FEE_TIER_CONFIG.tiers;
-  const isCustom = Boolean(customConfig && customConfig.tiers?.length > 0);
+  const activeTiers = customConfig && customConfig.length > 0 ? customConfig : DEFAULT_FEE_TIER_CONFIG;
+  const isCustom = Boolean(customConfig && customConfig.length > 0);
 
   return (
     <div className="rounded-2xl border border-hairline bg-surface p-5">
@@ -41,12 +41,15 @@ export function StoreFeeMatrix({
             </div>
             <div className="mt-2">
               <p className="font-mono text-sm font-semibold text-ink">
-                ₱{tier.fee.toFixed(2)} <span className="text-xs font-normal text-muted">fee</span>
+                ₱{tier.fee.toFixed(2)}{" "}
+                <span className="text-xs font-normal text-muted">
+                  {tier.type === "per_thousand" ? "per ₱1,000" : "flat fee"}
+                </span>
               </p>
               <p className="mt-0.5 text-xs text-muted">
-                {tier.max_amount !== null
-                  ? `Transactions up to ₱${tier.max_amount.toLocaleString()}`
-                  : `Transactions above ₱${(activeTiers[idx - 1]?.max_amount ?? 0).toLocaleString()}`}
+                {tier.max !== null
+                  ? `Transactions ₱${tier.min.toLocaleString()} to ₱${tier.max.toLocaleString()}`
+                  : `Transactions above ₱${tier.min.toLocaleString()}`}
               </p>
             </div>
           </div>

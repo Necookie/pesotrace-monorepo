@@ -100,19 +100,20 @@ export default async function AdminAuditLogPage() {
                 </span>
                 <span className="shrink-0 text-xs text-muted">{formatDateTime(entry.createdAt)}</span>
               </div>
-            <p className="mt-2 text-sm text-ink">
-              {entry.storeId ? (
-                <Link href={`/admin/stores/${entry.storeId}`} className="hover:text-primary">
-                  {entry.storeName}
-                </Link>
-              ) : (
-                (entry.storeName ?? "—")
-              )}
-            </p>
-            {entry.targetSummary && <p className="mt-1 text-sm text-body">{entry.targetSummary}</p>}
-            <p className="mt-2 text-xs text-muted">{entry.actorUserId}</p>
-          </div>
-        ))}
+              <p className="mt-2 text-sm text-ink">
+                {entry.storeId ? (
+                  <Link href={`/admin/stores/${entry.storeId}`} className="hover:text-primary">
+                    {entry.storeName}
+                  </Link>
+                ) : (
+                  (entry.storeName ?? "—")
+                )}
+              </p>
+              {entry.targetSummary && <p className="mt-1 text-sm text-body">{entry.targetSummary}</p>}
+              <p className="mt-2 text-xs text-muted">{entry.actorUserId}</p>
+            </div>
+          );
+        })}
         {entries.length === 0 && (
           <div className="rounded-2xl border border-hairline py-10 text-center text-muted">
             No admin actions logged yet.

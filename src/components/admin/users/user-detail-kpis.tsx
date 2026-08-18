@@ -1,6 +1,6 @@
 import { TrendingUp, Receipt, Coins, CheckCircle2, Zap, Activity } from "lucide-react";
 import { AdminKpiTile } from "@/components/admin/admin-kpi-tile";
-import { formatCurrency, formatRelativeTime, formatExtractionCost } from "@/lib/format";
+import { formatPeso, formatRelativeTime, formatExtractionCost } from "@/lib/format";
 import type { AdminUserDetailData } from "@/lib/queries/admin-types";
 
 export function UserDetailKpis({ stats }: { stats: AdminUserDetailData["stats"] }) {
@@ -8,10 +8,10 @@ export function UserDetailKpis({ stats }: { stats: AdminUserDetailData["stats"] 
     <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
       <AdminKpiTile
         label="Volume Handled"
-        value={formatCurrency(stats.totalVolume)}
+        value={formatPeso(stats.totalVolume)}
         icon={TrendingUp}
         accent="primary"
-        subtitle={`Avg ${formatCurrency(stats.avgAmount)}`}
+        subtitle={`Avg ${formatPeso(stats.avgAmount)}`}
       />
       <AdminKpiTile
         label="Transactions"
@@ -22,7 +22,7 @@ export function UserDetailKpis({ stats }: { stats: AdminUserDetailData["stats"] 
       />
       <AdminKpiTile
         label="Fees Generated"
-        value={formatCurrency(stats.totalFees)}
+        value={formatPeso(stats.totalFees)}
         icon={Coins}
         accent="up"
         subtitle={`${((stats.totalFees / (stats.totalVolume || 1)) * 100).toFixed(2)}% margin`}
