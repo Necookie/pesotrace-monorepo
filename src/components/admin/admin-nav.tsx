@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Store, Search, ScrollText, ShieldCheck, Settings, Megaphone } from "lucide-react";
+import {
+  Store,
+  Receipt,
+  Users,
+  Search,
+  ScrollText,
+  ShieldCheck,
+  Settings,
+  Megaphone,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface NavItemConfig {
@@ -15,6 +24,8 @@ export interface NavItemConfig {
 
 const NAV_ITEMS: NavItemConfig[] = [
   { href: "/admin", label: "Stores", icon: Store, exact: true },
+  { href: "/admin/transactions", label: "Transactions", icon: Receipt },
+  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/search", label: "Search", icon: Search },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   { href: "/admin/admins", label: "Admins", icon: ShieldCheck },
