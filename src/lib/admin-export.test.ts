@@ -15,7 +15,7 @@ describe("generateStoresCsv", () => {
       suspended: false,
       dailyUsage: [],
       feeConfig: {
-        mode: "tiered",
+        mode: "tiers",
         summaryText: "Tiered",
         isCustom: false,
       },
@@ -31,7 +31,7 @@ describe("generateStoresCsv", () => {
       suspended: true,
       dailyUsage: [],
       feeConfig: {
-        mode: "fixed",
+        mode: "formula",
         summaryText: "Fixed P10",
         isCustom: true,
       },
