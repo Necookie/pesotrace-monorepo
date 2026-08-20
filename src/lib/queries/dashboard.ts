@@ -46,6 +46,7 @@ export type DashboardStats = {
     feesEarned: PeriodDelta;
     avgSize: PeriodDelta;
   };
+  hasAnyTransactions: boolean;
 };
 
 function dayKey(iso: string) {
@@ -135,6 +136,16 @@ export const getDashboardStats = cache(async function getDashboardStats(
   if (error) throw error;
   const allRows: DashboardRow[] = data ?? [];
 
+  let hasAnyTransactions = allRows.length > 0;
+  if (!hasAnyTransactions) {
+    const { count } = await supabase
+      .from("transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("store_id", storeId)
+      .limit(1);
+    hasAnyTransactions = (count ?? 0) > 0;
+  }
+
   const sinceIso = since.toISOString();
   const rows = allRows.filter((r) => r.occurred_at >= sinceIso);
   const previousRows = allRows.filter((r) => r.occurred_at < sinceIso);
@@ -205,5 +216,6 @@ export const getDashboardStats = cache(async function getDashboardStats(
       feesEarned: periodDelta(current.feesEarned, previous.feesEarned),
       avgSize: periodDelta(current.avgSize, previous.avgSize),
     },
+    hasAnyTransactions,
   };
 });
