@@ -23,7 +23,7 @@ export default async function DashboardPage() {
 
   const stats = await getDashboardStats(supabase, storeId);
 
-  if (stats.transactionCount === 0) {
+  if (!stats.hasAnyTransactions) {
     return (
       <div className="mx-auto max-w-6xl p-4 sm:p-6">
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 rounded-2xl border border-hairline bg-[url('/empty-state-background.jpg')] bg-cover bg-center p-8 text-center">
