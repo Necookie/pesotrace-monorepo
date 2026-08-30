@@ -67,6 +67,8 @@ function buildPrompt(storePhoneNumbers: string[]): string {
   return base + phoneHint + confidenceNote;
 }
 
+import { sanitizeExtractionPayload } from "@/lib/gemini/sanitize";
+
 export type ExtractionResult =
   | { ok: true; data: ExtractedTransaction; cost: ExtractionCost }
   | { ok: false; error: string; cost: ExtractionCost };
@@ -94,7 +96,8 @@ export async function extractTransactionFromImage(
 
     const cost = computeExtractionCost(res.usageMetadata);
     const raw = JSON.parse(res.text ?? "{}");
-    const parsed = extractedTransactionSchema.safeParse(raw);
+    const sanitized = typeof raw === "object" && raw !== null ? sanitizeExtractionPayload(raw) : raw;
+    const parsed = extractedTransactionSchema.safeParse(sanitized);
 
     if (!parsed.success) {
       return { ok: false, error: "Gemini response did not match the expected shape.", cost };

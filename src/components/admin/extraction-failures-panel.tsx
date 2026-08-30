@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AlertOctagon, X } from "lucide-react";
+import { AlertOctagon, Info, X } from "lucide-react";
 import { formatExtractionCost } from "@/lib/format";
 import type { StoreExtractionFailures } from "@/lib/queries/admin";
 
@@ -12,15 +12,15 @@ const DISMISS_KEY = "admin:extraction-failures-dismissed";
  * Only renders when there's something to see — a quiet week means no card,
  * not an empty one taking up space on the overview page.
  *
- * Adds a dismiss button that hides the panel for the current browser
- * session (via sessionStorage) so operators who've already reviewed
- * the failures aren't interrupted by the panel on every page load.
- * The panel re-appears automatically when a new failure is detected
- * (the total count changes).
+ * Distinguishes between normal isolated user noise (< 5% failure rate) and
+ * true systemic spikes (≥ 5% or multiple failures), styling appropriately so
+ * operators aren't alarmed by a single blurry receipt.
  */
 export function ExtractionFailuresPanel({ failures }: { failures: StoreExtractionFailures[] }) {
   const totalFailures = failures.reduce((sum, f) => sum + f.failureCount, 0);
   const [dismissed, setDismissed] = useState(false);
+
+  const hasElevated = failures.some((f) => f.failureRatePct >= 5 || f.failureCount >= 3);
 
   useEffect(() => {
     // Re-show the panel whenever the failure count changes (new failures surfaced)
@@ -40,29 +40,44 @@ export function ExtractionFailuresPanel({ failures }: { failures: StoreExtractio
   }
 
   return (
-    <div className="rounded-2xl border border-down/30 bg-down/5 p-4 sm:p-6">
+    <div
+      className={`rounded-2xl border p-4 sm:p-6 ${
+        hasElevated ? "border-down/30 bg-down/5" : "border-hairline bg-surface-soft"
+      }`}
+    >
       <div className="flex items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-down/10 text-down">
-          <AlertOctagon className="size-4" />
+        <div
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full ${
+            hasElevated ? "bg-down/10 text-down" : "bg-surface-strong text-body"
+          }`}
+        >
+          {hasElevated ? <AlertOctagon className="size-4" /> : <Info className="size-4" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h2 className="text-sm font-semibold text-ink">
-              {totalFailures} extraction failure{totalFailures === 1 ? "" : "s"} this week
+              {hasElevated
+                ? `${totalFailures} extraction failure${totalFailures === 1 ? "" : "s"} this week`
+                : `${totalFailures} isolated failed upload${totalFailures === 1 ? "" : "s"} this week`}
             </h2>
             <button
               type="button"
               onClick={handleDismiss}
               title="Dismiss until next failure"
-              className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted hover:bg-down/10 hover:text-down transition-colors"
+              className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-colors ${
+                hasElevated
+                  ? "text-muted hover:bg-down/10 hover:text-down"
+                  : "text-muted hover:bg-surface-strong hover:text-ink"
+              }`}
               aria-label="Dismiss extraction failures panel"
             >
               <X className="size-3.5" />
             </button>
           </div>
           <p className="mt-1 text-xs text-muted">
-            Gemini still bills for a failed call — a spike here can mean a bad prompt or an API issue, not just
-            bad screenshots.
+            {hasElevated
+              ? "Gemini still bills for a failed call — a spike here can mean a bad prompt or an API issue, not just bad screenshots."
+              : "Stores were charged 0 credits for failed attempts. A low failure rate (<5%) reflects standard user screenshot quality noise."}
           </p>
 
           <div className="mt-3 space-y-2">
