@@ -50,7 +50,7 @@ export type DashboardStats = {
 };
 
 function dayKey(iso: string) {
-  return new Date(iso).toISOString().slice(0, 10);
+  return iso.slice(0, 10);
 }
 
 function periodDelta(current: number, previous: number): PeriodDelta {

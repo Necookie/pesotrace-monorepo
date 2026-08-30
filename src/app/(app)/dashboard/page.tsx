@@ -7,9 +7,13 @@ import { TodayIncomeTile } from "@/components/dashboard/today-income-tile";
 import { DailyIncomeBreakdown } from "@/components/dashboard/daily-income-breakdown";
 import { SendReceiveChart, PieBreakdownChart, FeeTrendChart } from "@/components/charts/lazy";
 import { TopCounterparties } from "@/components/dashboard/top-counterparties";
+import { DashboardRealtimeSync } from "@/components/dashboard/dashboard-realtime-sync";
 import { buttonVariants } from "@/components/ui/button";
 import { formatPeso } from "@/lib/format";
 import { CATEGORY_CHART_COLORS } from "@/lib/chart-colors";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -42,7 +46,10 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-medium text-ink">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-medium text-ink">Dashboard</h1>
+          <DashboardRealtimeSync storeId={storeId} />
+        </div>
         {stats.needsReviewCount > 0 && (
           <Link
             href="/ledger?status=needs_review"
