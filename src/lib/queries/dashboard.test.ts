@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dailyIncomeFromRows } from "./dashboard";
+import { dailyIncomeFromRows, fetchAllPages } from "./dashboard";
 
 // The reference "now": 2026-07-27 12:00 Manila (04:00 UTC).
 const NOW = new Date("2026-07-27T04:00:00Z");
@@ -85,5 +85,67 @@ describe("dailyIncomeFromRows", () => {
     const result = dailyIncomeFromRows([], NOW);
     expect(result.todayIncome).toBe(0);
     expect(result.dailyIncome.every((d) => d.income === 0 && d.count === 0)).toBe(true);
+  });
+});
+
+describe("fetchAllPages", () => {
+  // Regression: getDashboardStats used to do one unranged `.select()` and
+  // trust it came back complete. Postgrest silently caps that at its
+  // configured row limit (1000 in production) instead of erroring, so once
+  // a store passed 1000 transactions in the 60-day window, the newest rows
+  // — today's — went missing and "Today's income" read ₱0 while the
+  // (correctly paginated) ledger still showed them. These tests simulate
+  // that cap directly, independent of the real limit's value.
+
+  it("collects every row across multiple pages up to the exact count", async () => {
+    const allRows = Array.from({ length: 250 }, (_, i) => ({ id: i }));
+    const fetchPage = async (offset: number, limit: number) => ({
+      data: allRows.slice(offset, offset + limit),
+      count: offset === 0 ? allRows.length : null,
+    });
+
+    const result = await fetchAllPages(fetchPage, 40);
+    expect(result).toHaveLength(250);
+    expect(result).toEqual(allRows);
+  });
+
+  it("keeps paging even when the server returns fewer rows per page than requested", async () => {
+    // A server-side cap smaller than the requested page size must not be
+    // mistaken for "no more rows" — the bug this guards against.
+    const allRows = Array.from({ length: 130 }, (_, i) => ({ id: i }));
+    const SERVER_CAP = 40;
+    const fetchPage = async (offset: number, limit: number) => ({
+      data: allRows.slice(offset, offset + Math.min(limit, SERVER_CAP)),
+      count: offset === 0 ? allRows.length : null,
+    });
+
+    const result = await fetchAllPages(fetchPage, 1000);
+    expect(result).toHaveLength(130);
+    expect(result).toEqual(allRows);
+  });
+
+  it("returns everything in one page when the total fits", async () => {
+    const allRows = [{ id: 1 }, { id: 2 }, { id: 3 }];
+    const fetchPage = async (offset: number, limit: number) => ({
+      data: allRows.slice(offset, offset + limit),
+      count: offset === 0 ? allRows.length : null,
+    });
+
+    const result = await fetchAllPages(fetchPage, 1000);
+    expect(result).toEqual(allRows);
+  });
+
+  it("returns an empty array when there are no matching rows", async () => {
+    const fetchPage = async () => ({ data: [], count: 0 });
+    const result = await fetchAllPages(fetchPage, 1000);
+    expect(result).toEqual([]);
+  });
+
+  it("stops instead of looping forever if a page reports data but a null count", async () => {
+    const fetchPage = async () => ({ data: [{ id: 1 }], count: null });
+    // count resolves to 0 on the first page, so the loop must not keep
+    // requesting more once it already has >= 0 rows.
+    const result = await fetchAllPages(fetchPage, 1000);
+    expect(result).toEqual([{ id: 1 }]);
   });
 });
