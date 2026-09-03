@@ -53,6 +53,46 @@ function dayKey(iso: string) {
   return iso.slice(0, 10);
 }
 
+const MAX_PAGE_SIZE = 1000;
+
+type PageResult<T> = { data: T[] | null; count: number | null };
+
+/**
+ * Repeatedly calls `fetchPage` with increasing offsets until every row
+ * matching the query has been collected.
+ *
+ * PostgREST silently caps an unranged select at its configured row limit
+ * (1000 by default on this project) with no error — it was never surfaced
+ * because the response still looks like a normal, successful array. Once a
+ * store's transaction volume in the fetch window passed 1000, the single
+ * unranged `.select()` this replaced started dropping rows with no warning,
+ * and because Postgrest's default order for an unranged query is
+ * insertion/id order (oldest first here), the rows that fell off the end
+ * were the newest ones — including today's, which is exactly what made
+ * "Today's income" read ₱0 while the (correctly paginated) ledger still
+ * showed the same transactions fine.
+ *
+ * Stops using the exact `count` from the first page rather than comparing
+ * against `pageSize`, so this stays correct even if the server's actual cap
+ * is smaller than the page size requested.
+ */
+export async function fetchAllPages<T>(
+  fetchPage: (offset: number, limit: number) => Promise<PageResult<T>>,
+  pageSize: number = MAX_PAGE_SIZE
+): Promise<T[]> {
+  const rows: T[] = [];
+  let offset = 0;
+  let total: number | null = null;
+  while (total === null || rows.length < total) {
+    const { data, count } = await fetchPage(offset, pageSize);
+    if (total === null) total = count ?? 0;
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    offset += data.length;
+  }
+  return rows;
+}
+
 function periodDelta(current: number, previous: number): PeriodDelta {
   const pct = previous > 0 ? ((current - previous) / previous) * 100 : null;
   return { current, previous, pct };
@@ -127,14 +167,20 @@ export const getDashboardStats = cache(async function getDashboardStats(
 
   // One 60-day fetch covers both the current and prior 30-day windows, so
   // computing period-over-period deltas doesn't cost a second round trip.
-  const { data, error } = await supabase
-    .from("transactions")
-    .select(DASHBOARD_COLUMNS)
-    .eq("store_id", storeId)
-    .gte("occurred_at", prevSince.toISOString());
-
-  if (error) throw error;
-  const allRows: DashboardRow[] = data ?? [];
+  // Paginated (see fetchAllPages) because a single unranged select silently
+  // truncates at Postgrest's row cap once a store passes it.
+  const prevSinceIso = prevSince.toISOString();
+  const allRows = await fetchAllPages<DashboardRow>(async (offset, limit) => {
+    const { data, error, count } = await supabase
+      .from("transactions")
+      .select(DASHBOARD_COLUMNS, { count: offset === 0 ? "exact" : undefined })
+      .eq("store_id", storeId)
+      .gte("occurred_at", prevSinceIso)
+      .order("occurred_at", { ascending: true })
+      .range(offset, offset + limit - 1);
+    if (error) throw error;
+    return { data, count };
+  });
 
   let hasAnyTransactions = allRows.length > 0;
   if (!hasAnyTransactions) {
