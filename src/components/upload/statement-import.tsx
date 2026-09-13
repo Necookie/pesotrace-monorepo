@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 type ParsedStatement = {
   rows: StatementRow[];
   reconciliation: ReconciliationResult[];
-  sourceFileUrl: string;
+  sourceFileUrl: string | null;
   cost: ExtractionCost;
 };
 
@@ -42,6 +42,10 @@ export function StatementImport() {
     if (!res.ok) {
       setError(body.error ?? "Failed to parse statement");
       return;
+    }
+
+    if (body.warning) {
+      toast.warning(body.warning);
     }
 
     setParsed({

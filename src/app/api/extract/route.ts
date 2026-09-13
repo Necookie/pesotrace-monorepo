@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { creditsForExtraction } from "@/lib/credits/pricing";
 import { captureException } from "@/lib/monitoring-server";
 import { notifyExtractionFailed } from "@/lib/email/notify-store";
+import { uploadWithRetry } from "@/lib/storage/upload-with-retry";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -88,23 +89,33 @@ async function handlePost(request: Request) {
 
   const [extractionResult, uploadResult] = await Promise.all([
     extractTransactionFromImage(buffer, file.type, storePhoneNumbers),
-    supabase.storage.from("transaction-sources").upload(objectPath, buffer, {
-      contentType: file.type,
-      upsert: false,
-    }),
+    uploadWithRetry(() =>
+      supabase.storage.from("transaction-sources").upload(objectPath, buffer, {
+        contentType: file.type,
+        // Retries reuse this random path. Upsert makes the operation
+        // idempotent if Storage accepted the bytes but lost the response.
+        upsert: true,
+      })
+    ),
   ]);
 
-  if (uploadResult.error) {
-    return NextResponse.json(
-      { error: `Storage upload failed: ${uploadResult.error.message}` },
-      { status: 500 }
-    );
+  if (!uploadResult.ok) {
+    // A transport failure can happen after Storage accepted the object. Since
+    // the response will use a null source URL, clean up that exact random path.
+    await supabase.storage.from("transaction-sources").remove([objectPath]);
+    await captureException(uploadResult.error, "server", {
+      route: "api/extract",
+      operation: "storage-upload",
+      attempts: uploadResult.attempts,
+    });
   }
 
   if (!extractionResult.ok) {
     // Nothing will ever reference this upload — a failed extraction never
     // reaches the review step — so don't leave it orphaned in storage.
-    await supabase.storage.from("transaction-sources").remove([objectPath]);
+    if (uploadResult.ok) {
+      await supabase.storage.from("transaction-sources").remove([objectPath]);
+    }
     // Google still bills for a failed call — log the real cost without
     // charging the store's credit balance for a result they can't use.
     await supabase.rpc("consume_credit", {
@@ -135,7 +146,10 @@ async function handlePost(request: Request) {
 
   return NextResponse.json({
     extracted: extractionResult.data,
-    source_file_url: objectPath,
+    source_file_url: uploadResult.ok ? objectPath : null,
+    warning: uploadResult.ok
+      ? undefined
+      : "Transaction extracted, but the source image could not be stored. You can still review and save it.",
     cost: extractionResult.cost,
   });
 }

@@ -37,15 +37,16 @@ type QueueItem = {
   previewUrl: string;
   status: "extracting" | "ready" | "error" | "done";
   extracted?: ExtractedTransaction;
-  sourceFileUrl?: string;
+  sourceFileUrl?: string | null;
   error?: string;
   cost?: ExtractionCost;
 };
 
 async function extractOne(file: File): Promise<{
   extracted?: ExtractedTransaction;
-  sourceFileUrl?: string;
+  sourceFileUrl?: string | null;
   error?: string;
+  warning?: string;
   cost?: ExtractionCost;
 }> {
   const formData = new FormData();
@@ -59,7 +60,12 @@ async function extractOne(file: File): Promise<{
       cost: body.cost,
     };
   }
-  return { extracted: body.extracted, sourceFileUrl: body.source_file_url, cost: body.cost };
+  return {
+    extracted: body.extracted,
+    sourceFileUrl: body.source_file_url,
+    warning: body.warning,
+    cost: body.cost,
+  };
 }
 
 export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) {
@@ -81,6 +87,9 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
     await mapWithConcurrency(newItems, BULK_EXTRACT_CONCURRENCY, async (item) => {
       const result = await extractOne(item.file);
       trackEvent(result.extracted ? ClientEvent.ExtractionSucceeded : ClientEvent.ExtractionFailedShown);
+      if (result.warning) {
+        toast.warning(result.warning);
+      }
       setQueue((prev) =>
         prev.map((q) =>
           q.id === item.id
