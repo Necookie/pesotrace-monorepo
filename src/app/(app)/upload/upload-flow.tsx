@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dropzone } from "@/components/upload/dropzone";
 import { ExtractionReviewCard, type ReviewFormValues } from "@/components/upload/extraction-review-card";
 import { StatementImport } from "@/components/upload/statement-import";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ExtractedTransaction } from "@/lib/schemas/transaction";
 import type { ExtractionCost } from "@/lib/gemini/pricing";
@@ -19,6 +20,7 @@ type UploadTab = "single" | "bulk" | "statement";
 // Promise.all over the whole batch would fire dozens of Gemini/Storage
 // requests simultaneously.
 const BULK_EXTRACT_CONCURRENCY = 4;
+const CLIENT_EXTRACT_ATTEMPTS = 2;
 
 async function mapWithConcurrency<T>(items: T[], limit: number, fn: (item: T) => Promise<void>) {
   let next = 0;
@@ -49,29 +51,79 @@ async function extractOne(file: File): Promise<{
   warning?: string;
   cost?: ExtractionCost;
 }> {
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch("/api/extract", { method: "POST", body: formData });
-  const body = await res.json();
-  if (!res.ok) {
-    return {
-      error: body.error ?? "Extraction failed",
-      sourceFileUrl: body.source_file_url,
-      cost: body.cost,
-    };
+  for (let attempt = 1; attempt <= CLIENT_EXTRACT_ATTEMPTS; attempt += 1) {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/extract", { method: "POST", body: formData });
+      const body = (await res.json().catch(() => ({}))) as {
+        extracted?: ExtractedTransaction;
+        source_file_url?: string | null;
+        error?: string;
+        warning?: string;
+        retryable?: boolean;
+        cost?: ExtractionCost;
+      };
+
+      if (!res.ok) {
+        if (res.status === 503 && body.retryable && attempt < CLIENT_EXTRACT_ATTEMPTS) {
+          const retryAfterSeconds = Number(res.headers.get("Retry-After")) || 2;
+          await new Promise((resolve) => setTimeout(resolve, retryAfterSeconds * 1_000));
+          continue;
+        }
+
+        return {
+          error: body.error ?? "Extraction failed",
+          sourceFileUrl: body.source_file_url,
+          cost: body.cost,
+        };
+      }
+
+      return {
+        extracted: body.extracted,
+        sourceFileUrl: body.source_file_url,
+        warning: body.warning,
+        cost: body.cost,
+      };
+    } catch {
+      // A network failure is ambiguous: the server may have completed the
+      // paid extraction before the response was lost. Do not automatically
+      // repeat it and risk charging twice; let the user choose Retry instead.
+      return {
+        error: "The upload service is temporarily unavailable. Please retry this image.",
+      };
+    }
   }
-  return {
-    extracted: body.extracted,
-    sourceFileUrl: body.source_file_url,
-    warning: body.warning,
-    cost: body.cost,
-  };
+
+  return { error: "Extraction failed" };
 }
 
 export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [tab, setTab] = useState<UploadTab>("single");
+
+  async function processItem(item: QueueItem) {
+    const result = await extractOne(item.file);
+    trackEvent(result.extracted ? ClientEvent.ExtractionSucceeded : ClientEvent.ExtractionFailedShown);
+    if (result.warning) {
+      toast.warning(result.warning);
+    }
+    setQueue((prev) =>
+      prev.map((q) =>
+        q.id === item.id
+          ? {
+              ...q,
+              status: result.extracted ? "ready" : "error",
+              extracted: result.extracted,
+              sourceFileUrl: result.sourceFileUrl,
+              error: result.error,
+              cost: result.cost,
+            }
+          : q
+      )
+    );
+  }
 
   async function handleFiles(files: File[]) {
     trackEvent(ClientEvent.UploadStarted, { count: files.length });
@@ -84,27 +136,18 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
     }));
     setQueue((prev) => [...prev, ...newItems]);
 
-    await mapWithConcurrency(newItems, BULK_EXTRACT_CONCURRENCY, async (item) => {
-      const result = await extractOne(item.file);
-      trackEvent(result.extracted ? ClientEvent.ExtractionSucceeded : ClientEvent.ExtractionFailedShown);
-      if (result.warning) {
-        toast.warning(result.warning);
-      }
-      setQueue((prev) =>
-        prev.map((q) =>
-          q.id === item.id
-            ? {
-                ...q,
-                status: result.extracted ? "ready" : "error",
-                extracted: result.extracted,
-                sourceFileUrl: result.sourceFileUrl,
-                error: result.error,
-                cost: result.cost,
-              }
-            : q
-        )
-      );
-    });
+    await mapWithConcurrency(newItems, BULK_EXTRACT_CONCURRENCY, processItem);
+  }
+
+  async function handleRetry(item: QueueItem) {
+    setQueue((prev) =>
+      prev.map((q) =>
+        q.id === item.id
+          ? { ...q, status: "extracting", error: undefined, cost: undefined }
+          : q
+      )
+    );
+    await processItem(item);
   }
 
   async function handleConfirm(item: QueueItem, values: ReviewFormValues) {
@@ -136,6 +179,9 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
   }
 
   const pendingReview = queue.filter((q) => q.status === "ready");
+  const visibleQueue = queue.filter(
+    (item) => item.status !== "done" && item.id !== pendingReview[0]?.id
+  );
   const batchCostUsd = queue.reduce((sum, q) => sum + (q.cost?.costUsd ?? 0), 0);
   const processedCount = queue.filter((q) => q.cost).length;
 
@@ -188,43 +234,51 @@ export function UploadFlow({ feeTierConfig }: { feeTierConfig: FeeTierConfig }) 
         </div>
       )}
 
-      {queue.length > 1 && (
+      {visibleQueue.length > 0 && (
         <div className="space-y-2">
-          {queue
-            .filter((item) => item.status !== "done" && item.id !== pendingReview[0]?.id)
-            .map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-3 rounded-xl border border-hairline p-3"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.previewUrl}
-                  alt={item.file.name}
-                  className="size-12 shrink-0 rounded-lg border border-hairline object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-ink">{item.file.name}</p>
-                  {item.status === "error" && (
-                    <p className="truncate text-xs text-down">{item.error}</p>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
-                    item.status === "extracting" && "text-muted",
-                    item.status === "ready" && "text-up",
-                    item.status === "error" && "text-down"
-                  )}
-                >
-                  {item.status === "extracting"
-                    ? "Extracting..."
-                    : item.status === "ready"
-                      ? "Ready"
-                      : "Failed"}
-                </span>
+          {visibleQueue.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-3 rounded-xl border border-hairline p-3"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.previewUrl}
+                alt={item.file.name}
+                className="size-12 shrink-0 rounded-lg border border-hairline object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-ink">{item.file.name}</p>
+                {item.status === "error" && (
+                  <p className="truncate text-xs text-down">{item.error}</p>
+                )}
               </div>
-            ))}
+              <span
+                className={cn(
+                  "shrink-0 rounded-pill bg-surface-strong px-2.5 py-1 text-xs font-medium",
+                  item.status === "extracting" && "text-muted",
+                  item.status === "ready" && "text-up",
+                  item.status === "error" && "text-down"
+                )}
+              >
+                {item.status === "extracting"
+                  ? "Extracting..."
+                  : item.status === "ready"
+                    ? "Ready"
+                    : "Failed"}
+              </span>
+              {item.status === "error" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => handleRetry(item)}
+                >
+                  Retry
+                </Button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

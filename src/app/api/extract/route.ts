@@ -8,6 +8,7 @@ import { creditsForExtraction } from "@/lib/credits/pricing";
 import { captureException } from "@/lib/monitoring-server";
 import { notifyExtractionFailed } from "@/lib/email/notify-store";
 import { uploadWithRetry } from "@/lib/storage/upload-with-retry";
+import { readSupabaseWithRetry, SupabaseReadError } from "@/lib/supabase/read-with-retry";
 
 import { auth } from "@clerk/nextjs/server";
 
@@ -23,6 +24,15 @@ export async function POST(request: Request) {
     return await handlePost(request);
   } catch (error) {
     await captureException(error, "server", { route: "api/extract" });
+    if (error instanceof SupabaseReadError && error.transient) {
+      return NextResponse.json(
+        {
+          error: "Our data service is temporarily unavailable. Please retry this image.",
+          retryable: true,
+        },
+        { status: 503, headers: { "Retry-After": "2" } }
+      );
+    }
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }
@@ -49,9 +59,27 @@ async function handlePost(request: Request) {
     );
   }
 
-  const [{ data: credits }, { data: store }] = await Promise.all([
-    supabase.from("store_credits").select("balance").eq("store_id", storeId).maybeSingle(),
-    supabase.from("stores").select("phone_numbers, suspended").eq("id", storeId).single(),
+  const [credits, store] = await Promise.all([
+    readSupabaseWithRetry(
+      (signal) =>
+        supabase
+          .from("store_credits")
+          .select("balance")
+          .eq("store_id", storeId)
+          .abortSignal(signal)
+          .maybeSingle(),
+      "load store credits for image extraction"
+    ),
+    readSupabaseWithRetry(
+      (signal) =>
+        supabase
+          .from("stores")
+          .select("phone_numbers, suspended")
+          .eq("id", storeId)
+          .abortSignal(signal)
+          .single(),
+      "load store settings for image extraction"
+    ),
   ]);
 
   if (store?.suspended) {

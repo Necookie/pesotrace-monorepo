@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@/lib/supabase/server";
+import { readSupabaseWithRetry } from "@/lib/supabase/read-with-retry";
 
 export type StoreContext = {
   storeId: string | null;
@@ -23,11 +24,16 @@ export const getStoreContext = cache(async function getStoreContext(): Promise<S
   if (!userId) return { storeId: null, storeName: null, creditBalance: 0 };
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("store_id, stores(name, store_credits(balance))")
-    .eq("id", userId)
-    .maybeSingle();
+  const data = await readSupabaseWithRetry(
+    (signal) =>
+      supabase
+        .from("profiles")
+        .select("store_id, stores(name, store_credits(balance))")
+        .eq("id", userId)
+        .abortSignal(signal)
+        .maybeSingle(),
+    "load the current user's store context"
+  );
 
   // store_credits.store_id is a 1:1 PK relationship. PostgREST returns this
   // embed as a single object (verified against the live API), but
