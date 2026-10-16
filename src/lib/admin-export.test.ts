@@ -13,11 +13,14 @@ describe("generateStoresCsv", () => {
       costUsdThisMonth: 0.0425,
       lastActivityAt: "2026-08-16T12:00:00Z",
       suspended: false,
+      usageAnomaly: false,
       dailyUsage: [],
       feeConfig: {
         mode: "tiers",
-        summaryText: "Tiered",
-        isCustom: false,
+        label: "Tiered",
+        detail: "Default tiered fees",
+        isDefault: true,
+        samples: [],
       },
     },
     {
@@ -29,11 +32,14 @@ describe("generateStoresCsv", () => {
       costUsdThisMonth: 0,
       lastActivityAt: null,
       suspended: true,
+      usageAnomaly: false,
       dailyUsage: [],
       feeConfig: {
         mode: "formula",
-        summaryText: "Fixed P10",
-        isCustom: true,
+        label: "Fixed P10",
+        detail: "Custom fixed fee",
+        isDefault: false,
+        samples: [],
       },
     },
   ];
