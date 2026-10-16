@@ -3,6 +3,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@keyframes donut-reveal { from { stroke-dasharray: 0 1; } to { stroke-dasharray: 1 0; } }
+.donut-segment { animation: donut-reveal 800ms ease-out both; }
+@media (prefers-reduced-motion: reduce) { .donut-segment { animation: none; } }
+
 @theme {
   /* Brand */
   --color-primary: #0052ff;
