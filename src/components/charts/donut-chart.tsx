@@ -12,8 +12,7 @@ export function DonutChart({ segments, children, formatValue = String, label = "
   const [active, setActive] = useState<string | null>(null);
   const positive = segments.filter((segment) => segment.value > 0);
   const total = positive.reduce((sum, segment) => sum + segment.value, 0);
-  let cursor = 0;
-  const placed = positive.map((segment) => { const sweep = segment.value / total * 360; const start = cursor; cursor += sweep; return { ...segment, share: segment.value / total, start, sweep: Math.max(0, sweep - Math.min(gap, sweep * .4)) }; });
+  const placed = positive.map((segment, index) => { const sweep = segment.value / total * 360; const start = positive.slice(0, index).reduce((sum, previous) => sum + previous.value / total * 360, 0); return { ...segment, share: segment.value / total, start, sweep: Math.max(0, sweep - Math.min(gap, sweep * .4)) }; });
   return <Context.Provider value={{ segments: placed, total, active, setActive, selectedId, onSelect, formatValue, label, thickness }}><div className={className}>{children}</div></Context.Provider>;
 }
 
